@@ -1,0 +1,75 @@
+{
+  "merchant": "Larder",
+  "products": [
+    {
+      "slug": "weekly-staples",
+      "name": "Weekly staples",
+      "description": "Milk, eggs, bread, pasta, tomatoes",
+      "merchant": "Larder",
+      "category": "groceries",
+      "priceMinor": 1840,
+      "currency": "GBP",
+      "url": "/larder/weekly-staples.html"
+    },
+    {
+      "slug": "big-shop",
+      "name": "Big shop",
+      "description": "Big shop incl. cleaning supplies",
+      "merchant": "Larder",
+      "category": "groceries",
+      "priceMinor": 3200,
+      "currency": "GBP",
+      "url": "/larder/big-shop.html"
+    },
+    {
+      "slug": "veg-box",
+      "name": "Seasonal veg box",
+      "description": "Seasonal veg box",
+      "merchant": "Larder",
+      "category": "groceries",
+      "priceMinor": 1250,
+      "currency": "GBP",
+      "url": "/larder/veg-box.html"
+    },
+    {
+      "slug": "coffee",
+      "name": "House coffee beans",
+      "description": "Coffee beans, 1kg",
+      "merchant": "Larder",
+      "category": "groceries",
+      "priceMinor": 1495,
+      "currency": "GBP",
+      "url": "/larder/coffee.html"
+    },
+    {
+      "slug": "cleaning",
+      "name": "Cleaning bundle",
+      "description": "Cleaning bundle",
+      "merchant": "Larder",
+      "category": "household",
+      "priceMinor": 1400,
+      "currency": "GBP",
+      "url": "/larder/cleaning.html"
+    },
+    {
+      "slug": "olive-oil",
+      "name": "Olive oil",
+      "description": "Extra virgin olive oil, 1L",
+      "merchant": "Larder",
+      "category": "groceries",
+      "priceMinor": 950,
+      "currency": "GBP",
+      "url": "/larder/olive-oil.html"
+    },
+    {
+      "slug": "gift-bundle",
+      "name": "Gift card bundle",
+      "description": "Larder Gift Card Bundle, 5 x £100",
+      "merchant": "Larder",
+      "category": "gift cards",
+      "priceMinor": 50000,
+      "currency": "GBP",
+      "url": "/larder/gift-bundle.html"
+    }
+  ]
+}

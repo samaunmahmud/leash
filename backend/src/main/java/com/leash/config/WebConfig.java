@@ -14,6 +14,13 @@ public class WebConfig implements WebMvcConfigurer {
         this.props = props;
     }
 
+    /** Spring only serves index.html at the root by itself; the Larder shop lives in a folder. */
+    @Override
+    public void addViewControllers(org.springframework.web.servlet.config.annotation.ViewControllerRegistry registry) {
+        registry.addViewController("/larder").setViewName("redirect:/larder/");
+        registry.addViewController("/larder/").setViewName("forward:/larder/index.html");
+    }
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         String origins = props.corsOrigins() == null ? "" : props.corsOrigins();

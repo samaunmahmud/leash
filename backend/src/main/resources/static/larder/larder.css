@@ -1,0 +1,13 @@
+:root{--bg:#fbf8f2;--ink:#20201c;--muted:#6b675c;--line:#e7e1d4;--card:#fff;--brand:#2f5d3a;--brand-ink:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#151612;--ink:#ecebe4;--muted:#a3a094;--line:#2c2d27;--card:#1c1d18;--brand:#7fb88d;--brand-ink:#10140f}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.55 Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink)}
+header{border-bottom:1px solid var(--line);padding:14px 16px}header .in{max-width:960px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.logo{font-weight:700;font-size:22px;letter-spacing:.02em;color:var(--brand);text-decoration:none}.tag{color:var(--muted);font-size:14px;font-style:italic}
+main{max-width:960px;margin:auto;padding:24px 16px 48px}h1{font-size:28px;margin:0 0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;text-decoration:none;color:inherit;display:block}
+.card:hover{border-color:var(--brand)}.price{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;font-weight:600}
+.cat{display:inline-block;font:12px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.product{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px;max-width:560px}
+.buy{display:inline-block;margin-top:14px;background:var(--brand);color:var(--brand-ink);padding:10px 16px;border-radius:8px;font:600 15px system-ui,sans-serif;text-decoration:none}
+.note{color:var(--muted);font-size:14px;margin-top:18px}a{color:var(--brand)}
