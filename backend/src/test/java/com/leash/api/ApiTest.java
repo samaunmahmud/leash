@@ -34,6 +34,15 @@ class ApiTest {
     }
 
     @Test
+    void devPayPalEndpointSaysWhenPayPalIsNotConfigured() throws Exception {
+        var req = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/dev/paypal/order"))
+                .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString("{}")).build();
+        var res = http.send(req, HttpResponse.BodyHandlers.ofString());
+        assertThat(res.statusCode()).isEqualTo(503);
+        assertThat(res.body()).contains("isn't configured");
+    }
+
+    @Test
     void demoLedgerShowsApproveTugBlock() throws Exception {
         var res = get("/api/demo/ledger");
         assertThat(res.statusCode()).isEqualTo(200);

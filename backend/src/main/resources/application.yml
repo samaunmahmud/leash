@@ -14,8 +14,13 @@ leash:
     client-id: ${LEASH_PAYPAL_CLIENT_ID:}
     client-secret: ${LEASH_PAYPAL_CLIENT_SECRET:}
     payee-email: ${LEASH_PAYPAL_PAYEE_EMAIL:}
+    webhook-id: ${LEASH_PAYPAL_WEBHOOK_ID:}
   llm:
     base-url: ${LEASH_LLM_BASE_URL:}
     api-key: ${LEASH_LLM_API_KEY:}
     model: ${LEASH_LLM_MODEL:}
+    max-calls-per-day: ${LEASH_LLM_MAX_CALLS_PER_DAY:500}
   cors-origins: ${LEASH_CORS_ORIGINS:http://localhost:5173}
+  public-url: ${LEASH_PUBLIC_URL:http://localhost:8080}
+  app-url: ${LEASH_APP_URL:http://localhost:5173}
+  dev-endpoints: ${LEASH_DEV_ENDPOINTS:true}
