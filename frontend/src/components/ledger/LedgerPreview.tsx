@@ -1,24 +1,13 @@
 import { Fragment, useState } from "react";
-import type { DemoLedger, LedgerEntry, Outcome } from "../../types";
-import { money, OUTCOME_LABEL, usedPercent } from "../../lib/format";
-import { CheckIcon, ChevronIcon, HandIcon, StopIcon } from "../ui/Icons";
-
-const ICON: Record<Outcome, JSX.Element> = { APPROVE: <CheckIcon />, TUG: <HandIcon />, BLOCK: <StopIcon /> };
-
-// Risk findings explain the "why" best, so they lead the reason list; the rest keep the engine's order.
-const RISK_FIRST = ["PROMPT_INJECTION", "LOOKALIKE_MERCHANT", "AI_RISK_HIGH", "TASK_MISMATCH", "PRICE_SPIKE"];
-function sortedReasons(e: LedgerEntry) {
-  return [...e.decision.reasons].sort(
-    (a, b) => (RISK_FIRST.includes(b.code) ? 1 : 0) - (RISK_FIRST.includes(a.code) ? 1 : 0),
-  );
-}
-
-function time(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" });
-}
+import type { DemoLedger } from "../../types";
+import { money, usedPercent } from "../../lib/format";
+import { timeUk as time } from "../../lib/status";
+import { ChevronIcon } from "../ui/Icons";
+import { OutcomePill } from "../ui/OutcomePill";
+import { ReasonCard } from "./ReasonCard";
 
 /**
- * Plain table for the starter. T13 swaps this for AG Grid (filters, quick search, row renderers); keep the columns.
+ * The landing page's ledger example. The dashboard's live ledger is components/app/LedgerGrid.
  */
 export function LedgerPreview({ data, live }: { data: DemoLedger; live: boolean }) {
   const [open, setOpen] = useState<string | null>(data.entries.at(-1)?.request.id ?? null);
@@ -74,7 +63,7 @@ export function LedgerPreview({ data, live }: { data: DemoLedger; live: boolean 
                       <td className="hide-sm">{e.request.merchant}</td>
                       <td className="num r">{money(e.request.amountMinor, e.request.currency)}</td>
                       <td>
-                        <span className={`pill out-${e.decision.outcome}`}>{ICON[e.decision.outcome]}{OUTCOME_LABEL[e.decision.outcome]}</span>
+                        <OutcomePill outcome={e.decision.outcome} />
                       </td>
                       <td className="r">
                         <button type="button" className="icon-btn row-toggle" aria-expanded={isOpen}
@@ -104,31 +93,5 @@ export function LedgerPreview({ data, live }: { data: DemoLedger; live: boolean 
         </p>
       )}
     </section>
-  );
-}
-
-function ReasonCard({ entry }: { entry: LedgerEntry }) {
-  const { request, decision } = entry;
-  const reasons = sortedReasons(entry);
-  return (
-    <div className={`reason-card out-${decision.outcome}`}>
-      <div className="reason-meta">
-        <p><span className="dim">Task given</span> {request.task}</p>
-        <p><span className="dim">Agent's reason</span> {request.reason}</p>
-        {request.sourceUrl && <p><span className="dim">Found on</span> <code>{request.sourceUrl}</code></p>}
-      </div>
-      {reasons.length === 0 ? (
-        <p className="reason-ok">Inside every rule on the leash, so Leash paid it through PayPal without asking.</p>
-      ) : (
-        <ul className="reasons">
-          {reasons.map((r) => (
-            <li key={r.code}>
-              <code className="reason-code">{r.code.toLowerCase().replaceAll("_", " ")}</code>
-              <span>{r.message}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }

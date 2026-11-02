@@ -81,6 +81,7 @@
 .ledger-row:hover td { background: var(--panel-2); }
 .ledger-row.is-open td { background: var(--panel-2); }
 .ledger .item { white-space: normal; min-width: 180px; }
+@media (max-width: 560px) { .ledger .item { min-width: 0; } }
 @media (max-width: 640px) { .ledger .hide-sm { display: none; } .table th, .table td { padding: 11px 12px; } .reason-row td { padding: 0 12px 14px; } }
 .row-toggle { width: 30px; height: 30px; }
 .row-toggle svg { transition: transform 0.15s; }

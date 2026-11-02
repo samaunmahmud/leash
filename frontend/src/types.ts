@@ -1,6 +1,19 @@
-// Mirrors the backend records (com.leash.policy.*). Keep in sync when the API changes.
+// Mirrors the backend records (com.leash.*). Keep in sync when the API changes.
 
 export type Outcome = "APPROVE" | "TUG" | "BLOCK";
+export type Period = "DAY" | "WEEK" | "MONTH" | "TOTAL";
+
+export type EntryStatus =
+  | "BLOCKED"
+  | "TUG_PENDING"
+  | "DENIED"
+  | "PROCESSING"
+  | "AWAITING_PAYER"
+  | "PAID"
+  | "PAYPAL_OFF"
+  | "PAYMENT_FAILED"
+  | "CANCELLED"
+  | "REFUNDED";
 
 export interface Reason {
   code: string;
@@ -22,8 +35,8 @@ export interface PurchaseRequest {
   description: string;
   amountMinor: number;
   currency: string;
-  task: string;
-  reason: string;
+  task: string | null;
+  reason: string | null;
   sourceUrl: string | null;
   requestedAt: string;
 }
@@ -33,17 +46,35 @@ export interface Mandate {
   agentId: string;
   name: string;
   currency: string;
-  period: "DAY" | "WEEK" | "MONTH" | "TOTAL";
+  period: Period;
   periodLimitMinor: number;
   autoApproveUpToMinor: number;
   perPurchaseMaxMinor: number;
   allowedMerchants: string[];
+  blockedMerchants?: string[];
+  allowedCategories?: string[];
   blockedCategories: string[];
+  maxPurchasesPerHour?: number;
+  quietStart?: string | null;
+  quietEnd?: string | null;
+  active?: boolean;
 }
 
+/** A ledger row. The landing page's sample only has request + decision; live rows carry the rest. */
 export interface LedgerEntry {
+  id?: string;
   request: PurchaseRequest;
   decision: Decision;
+  riskExplanation?: string | null;
+  status?: EntryStatus;
+  statusDetail?: string | null;
+  paypalOrderId?: string | null;
+  paypalCaptureId?: string | null;
+  paypalRefundId?: string | null;
+  approveUrl?: string | null;
+  tugId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DemoLedger {
@@ -56,4 +87,73 @@ export interface Health {
   paypalConfigured: boolean;
   sandbox: boolean;
   aiConfigured: boolean;
+  vaultConnected?: boolean;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  kind: "grocery" | "office" | "travel" | "other";
+  revoked: boolean;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+export interface Usage {
+  spentMinor: number;
+  pendingMinor: number;
+  periodStart: string;
+}
+
+export interface LeashCard {
+  agent: Agent;
+  mandate: Mandate;
+  sourceText: string | null;
+  usage?: Usage;
+}
+
+export interface Tug {
+  id: string;
+  entryId: string;
+  status: "PENDING" | "APPROVED" | "DENIED";
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface TugView {
+  tug: Tug;
+  entry: LedgerEntry;
+}
+
+/** What the composer sends (and what the mandate parser returns). Money in minor units. */
+export interface MandateInput {
+  name: string;
+  currency: string;
+  period: Period;
+  periodLimitMinor: number;
+  autoApproveUpToMinor: number;
+  perPurchaseMaxMinor: number;
+  allowedMerchants: string[];
+  blockedMerchants: string[];
+  allowedCategories: string[];
+  blockedCategories: string[];
+  maxPurchasesPerHour: number;
+  quietStart: string | null;
+  quietEnd: string | null;
+  active: boolean;
+  sourceText: string | null;
+}
+
+export interface ParsedMandate {
+  mandate: MandateInput;
+  agentName: string | null;
+  kind: string | null;
+  source: "ai" | "heuristic";
+  notes: string[];
+}
+
+export interface ProblemDetail {
+  title?: string;
+  detail?: string;
+  status?: number;
 }

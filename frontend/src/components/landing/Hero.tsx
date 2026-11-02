@@ -52,7 +52,10 @@ export function Hero() {
         </dl>
         {submitted && (
           <p className="notice ok small">
-            <span>Preview only for now. Saving leashes arrives with the mandate parser; the rules above are what Leash will enforce.</span>
+            <span>
+              That's the gist. <a href={`#/app/new?text=${encodeURIComponent(text)}`}>Open the dashboard</a> to check every
+              rule and leash an agent with it.
+            </span>
           </p>
         )}
       </div>

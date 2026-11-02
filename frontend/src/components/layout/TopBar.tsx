@@ -28,19 +28,25 @@ function ThemeToggle() {
   );
 }
 
-export function TopBar({ health }: { health: Health | null }) {
+export function TopBar({ health, inApp = false }: { health: Health | null; inApp?: boolean }) {
   return (
     <header className="topbar">
       <div className="container">
-        <a className="brand" href="/" aria-label="Leash home">
+        <a className="brand" href="#" aria-label="Leash home">
           <BrandMark />
           <span className="brand-name">Leash</span>
           <span className="brand-sub">Agent spending</span>
         </a>
         <nav className="topnav" aria-label="Main">
-          <a href="#ledger" className="hide-sm">Ledger</a>
-          <a href="#uses" className="hide-sm">Use cases</a>
-          <a href="#how">How it works</a>
+          {inApp ? (
+            <a href="#" className="hide-sm">About Leash</a>
+          ) : (
+            <>
+              <a href="#ledger" className="hide-sm">Ledger</a>
+              <a href="#how" className="hide-sm">How it works</a>
+              <a href="#/app" className="nav-cta">Dashboard</a>
+            </>
+          )}
           <StatusPill health={health} />
           <ThemeToggle />
           <a className="icon-link" href="https://github.com/samaunmahmud/leash" aria-label="Source on GitHub">

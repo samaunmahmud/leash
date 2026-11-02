@@ -1,0 +1,108 @@
+/* The dashboard (#/app). Tokens only; burgundy for brand and action, outcome colours for outcomes. */
+
+.label { font-size: 11px; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-3); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.btn-ghost { background: none; border-color: transparent; box-shadow: none; color: var(--text-2); }
+.btn-ghost:hover { background: var(--panel-3); color: var(--text); }
+/* Snap back stops an agent, so it reads as "block" red, not burgundy. */
+.btn-danger { color: var(--neg); border-color: color-mix(in srgb, var(--neg) 35%, transparent); }
+.btn-danger:hover { background: var(--neg-soft); }
+/* PayPal blue only on PayPal marks. */
+.btn-pp { color: var(--paypal); border-color: color-mix(in srgb, var(--paypal) 40%, transparent); }
+.btn-pp:hover { background: var(--paypal-soft); }
+.pp-link, .pp { color: var(--paypal); }
+.pp-link { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+.nav-cta { color: var(--accent) !important; font-weight: 600 !important; }
+
+/* ── Header ──────────────────────────────────────────── */
+.app { padding-top: 36px; }
+.app-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.app-head h1 { font-size: 28px; font-weight: 750; letter-spacing: -0.03em; }
+.app-head p { margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+.app-actions { display: flex; gap: 8px; }
+.app-msg, .app > .notice { margin-top: 16px; }
+.stream-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-4); flex: none; }
+.stream-dot.is-live { background: var(--pos); box-shadow: 0 0 0 3px var(--pos-soft); }
+.stream-dot.is-connecting { background: var(--warn); }
+
+/* ── Tabs ────────────────────────────────────────────── */
+.tabs { display: flex; gap: 4px; margin: 24px 0 18px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--text-2); font-weight: 550; font-size: 14px; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab.is-on { color: var(--text); border-bottom-color: var(--accent); }
+.tab-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 11.5px; font-weight: 650; color: var(--warn); background: var(--warn-soft); }
+.empty { padding: 40px 20px; text-align: center; color: var(--text-3); border: 1px dashed var(--line-2); border-radius: var(--r-lg); }
+
+/* ── Leash cards ─────────────────────────────────────── */
+.leash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+@media (max-width: 400px) { .leash-grid { grid-template-columns: minmax(0, 1fr); } }
+.leash-card { display: flex; flex-direction: column; }
+.leash-card .card-head h3 { display: flex; align-items: center; }
+.leash-card.is-snapped { border-color: color-mix(in srgb, var(--neg) 35%, var(--line)); }
+.leash-card.is-snapped .leash-body { opacity: 0.7; }
+.leash-body { display: grid; gap: 14px; padding: 16px 20px; flex: 1; }
+.leash-body .length { min-width: 0; }
+.length-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.length-head .num { font-weight: 650; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+.facts div { padding: 10px 12px; border-radius: var(--r-sm); background: var(--panel-2); }
+.facts dt { font-size: 12px; color: var(--text-3); }
+.facts dd { margin: 2px 0 0; font-weight: 650; }
+.rule-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.rule-chips li { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--text-2); }
+.source-text { font-size: 13px; color: var(--text-3); font-style: italic; }
+.card-foot { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--panel-2); }
+.form-error { color: var(--neg); font-size: 13px; }
+
+/* ── Tugs ────────────────────────────────────────────── */
+.tug-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.tug { display: flex; gap: 16px 24px; padding: 18px 20px; border-left: 3px solid var(--tone); flex-wrap: wrap; }
+.tug-main { flex: 1 1 320px; display: grid; gap: 6px; min-width: 0; }
+.tug-who { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; }
+.tug-who .id-mark { margin-right: 3px; }
+.tug-what { font-size: 16px; }
+.tug-amount { font-size: 20px; font-weight: 700; }
+.tug-actions { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.reasons.compact { margin-top: 6px; gap: 6px; }
+.reasons.compact li { font-size: 13px; }
+.notice + .tug-list, .notice + .empty { margin-top: 12px; }
+
+/* ── Ledger ──────────────────────────────────────────── */
+.status-tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 550; color: var(--tone, var(--text-3)); background: color-mix(in srgb, var(--tone, var(--text-4)) 9%, transparent); white-space: nowrap; }
+.ledger-row.is-new td { animation: arrive 2.4s ease-out; }
+@keyframes arrive { from { background: var(--accent-soft); } to { background: transparent; } }
+.ledger td .id-mark { margin-right: 7px; }
+.entry-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.reason-ai, .reason-pay { grid-column: 1 / -1; }
+.reason-ai { padding: 10px 12px; border-radius: var(--r-sm); background: var(--panel-2); font-size: 13.5px; }
+.reason-ai .label { margin-right: 8px; }
+.reason-pay { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
+.reason-pay dt { font-size: 11.5px; color: var(--text-3); }
+.reason-pay dd { margin: 1px 0 0; }
+.reason-pay .wide { flex-basis: 100%; }
+
+/* ── New leash ───────────────────────────────────────── */
+.new-leash { display: grid; gap: 14px; max-width: 860px; }
+.new-leash .composer { margin-top: 0; }
+.new-leash .examples { margin-top: 0; }
+.mandate-form .notes { margin: 0; padding: 12px 20px 0 36px; color: var(--text-2); font-size: 13px; }
+.fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 16px; padding: 18px 20px; }
+@media (max-width: 760px) { .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.field { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.field.wide { grid-column: span 2; }
+.field input, .field select {
+  width: 100%; height: 38px; padding: 0 10px; border-radius: var(--r-sm); border: 1px solid var(--line-2);
+  background: var(--panel); color: var(--text); font: 500 14px var(--font);
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+@media (max-width: 560px) {
+  .app { padding-top: 24px; }
+  .app-head h1 { font-size: 24px; }
+  .app-actions { width: 100%; }
+  .app-actions .btn { flex: 1; }
+  .tug-actions { width: 100%; }
+  .tug-actions .btn { flex: 1; }
+}

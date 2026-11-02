@@ -1,5 +1,6 @@
 package com.leash.api;
 
+import com.leash.ledger.LedgerService;
 import com.leash.mandate.MandateInput;
 import com.leash.mandate.MandateService;
 import com.leash.mandate.MandateService.Leash;
@@ -23,19 +24,29 @@ import java.util.List;
 public class LeashController {
 
     private final MandateService leashes;
+    private final LedgerService ledger;
 
-    public LeashController(MandateService leashes) {
+    public LeashController(MandateService leashes, LedgerService ledger) {
         this.leashes = leashes;
+        this.ledger = ledger;
+    }
+
+    /** A leash plus how much of its length is used this period: what a leash card shows. */
+    public record LeashCard(com.leash.agent.Agent agent, com.leash.policy.Mandate mandate, String sourceText,
+                            LedgerService.Usage usage) {
+        static LeashCard of(Leash l, LedgerService ledger) {
+            return new LeashCard(l.agent(), l.mandate(), l.sourceText(), ledger.usage(l.mandate()));
+        }
     }
 
     @GetMapping
-    public List<Leash> list() {
-        return leashes.list();
+    public List<LeashCard> list() {
+        return leashes.list().stream().map(l -> LeashCard.of(l, ledger)).toList();
     }
 
     @GetMapping("/{agentId}")
-    public Leash get(@PathVariable String agentId) {
-        return leashes.get(agentId);
+    public LeashCard get(@PathVariable String agentId) {
+        return LeashCard.of(leashes.get(agentId), ledger);
     }
 
     @PostMapping

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { DemoLedger, Health } from "./types";
 import { fetchDemoLedger, fetchHealth } from "./api";
 import { SAMPLE_LEDGER } from "./lib/sample";
+import { useRoute } from "./hooks/useRoute";
 import { TopBar } from "./components/layout/TopBar";
 import { Footer } from "./components/layout/Footer";
 import { Tape, type TapeItem } from "./components/landing/Tape";
@@ -9,6 +10,7 @@ import { Hero } from "./components/landing/Hero";
 import { LedgerPreview } from "./components/ledger/LedgerPreview";
 import { HowItWorks } from "./components/landing/HowItWorks";
 import { UseCases } from "./components/landing/UseCases";
+import { Dashboard } from "./components/app/Dashboard";
 
 // Extra tape entries from the other demo leashes, so the feed shows more than one agent.
 const OTHER_WALKS: TapeItem[] = [
@@ -20,6 +22,7 @@ const OTHER_WALKS: TapeItem[] = [
 ];
 
 export default function App() {
+  const route = useRoute();
   const [health, setHealth] = useState<Health | null>(null);
   const [ledger, setLedger] = useState<{ data: DemoLedger; live: boolean }>({ data: SAMPLE_LEDGER, live: false });
 
@@ -37,6 +40,16 @@ export default function App() {
     }));
     return [mine[0], OTHER_WALKS[0], mine[1], OTHER_WALKS[1], OTHER_WALKS[2], mine[2], OTHER_WALKS[3], OTHER_WALKS[4]].filter(Boolean);
   }, [ledger]);
+
+  if (route.page === "app") {
+    return (
+      <>
+        <TopBar health={health} inApp />
+        <Dashboard tab={route.tab} />
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>

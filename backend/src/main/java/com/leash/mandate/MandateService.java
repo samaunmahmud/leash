@@ -4,6 +4,7 @@ import com.leash.agent.Agent;
 import com.leash.agent.AgentRepository;
 import com.leash.api.NotFoundException;
 import com.leash.policy.Mandate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +26,13 @@ public class MandateService {
     private final AgentRepository agents;
     private final MandateRepository mandates;
     private final Clock clock;
-    private final List<LeashListener> listeners;
+    private final ApplicationEventPublisher events;
 
-    public MandateService(AgentRepository agents, MandateRepository mandates, Clock clock, List<LeashListener> listeners) {
+    public MandateService(AgentRepository agents, MandateRepository mandates, Clock clock, ApplicationEventPublisher events) {
         this.agents = agents;
         this.mandates = mandates;
         this.clock = clock;
-        this.listeners = listeners;
+        this.events = events;
     }
 
     public List<Leash> list() {
@@ -57,7 +58,7 @@ public class MandateService {
         agents.insert(a);
         mandates.upsert(input.toMandate("m-" + id.substring(6), id), input.sourceText(), clock.instant());
         Leash leash = get(id);
-        listeners.forEach(l -> l.leashChanged(leash));
+        announce(leash);
         return leash;
     }
 
@@ -78,7 +79,7 @@ public class MandateService {
         mandates.upsert(input.toMandate(current.mandate().id(), agentId),
                 input.sourceText() != null ? input.sourceText() : current.sourceText(), clock.instant());
         Leash leash = get(agentId);
-        listeners.forEach(l -> l.leashChanged(leash));
+        announce(leash);
         return leash;
     }
 
@@ -88,7 +89,7 @@ public class MandateService {
         Agent a = agents.find(agentId).orElseThrow(() -> new NotFoundException("No agent called " + agentId));
         if (!a.revoked()) agents.update(a.snapped(clock.instant()));
         Leash leash = get(agentId);
-        listeners.forEach(l -> l.leashChanged(leash));
+        announce(leash);
         return leash;
     }
 
@@ -97,7 +98,7 @@ public class MandateService {
         Agent a = agents.find(agentId).orElseThrow(() -> new NotFoundException("No agent called " + agentId));
         if (a.revoked()) agents.update(a.releashed());
         Leash leash = get(agentId);
-        listeners.forEach(l -> l.leashChanged(leash));
+        announce(leash);
         return leash;
     }
 
@@ -110,8 +111,10 @@ public class MandateService {
         };
     }
 
-    /** Lets the live stream (T10) hear about leash changes without this service knowing about SSE. */
-    public interface LeashListener {
-        void leashChanged(Leash leash);
+    /** Published when a leash is created, changed, snapped or re-leashed. The live stream forwards it. */
+    public record LeashEvent(Leash leash) {}
+
+    private void announce(Leash leash) {
+        events.publishEvent(new LeashEvent(leash));
     }
 }
