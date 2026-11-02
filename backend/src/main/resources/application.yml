@@ -1,0 +1,21 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: leash
+  config:
+    # Reads ../.env when running from backend/ and .env when running from the repo root. Missing files are fine.
+    import: "optional:file:../.env[.properties],optional:file:.env[.properties]"
+
+leash:
+  paypal:
+    base-url: ${LEASH_PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
+    client-id: ${LEASH_PAYPAL_CLIENT_ID:}
+    client-secret: ${LEASH_PAYPAL_CLIENT_SECRET:}
+    payee-email: ${LEASH_PAYPAL_PAYEE_EMAIL:}
+  llm:
+    base-url: ${LEASH_LLM_BASE_URL:}
+    api-key: ${LEASH_LLM_API_KEY:}
+    model: ${LEASH_LLM_MODEL:}
+  cors-origins: ${LEASH_CORS_ORIGINS:http://localhost:5173}

@@ -1,0 +1,138 @@
+/*
+ * Design tokens: every colour, radius, shadow and font in one place. Never hard-code a colour in a component.
+ * Same system as Zenith, recoloured: burgundy is the one accent for brand and action.
+ * Outcome colours (paid / tug / blocked) are kept apart from it, so burgundy never reads as "blocked".
+ * PayPal blue appears only on PayPal-related marks.
+ */
+:root {
+  /* Surfaces */
+  --bg: #faf7f8;
+  --bg-2: #f3eef0;
+  --panel: #ffffff;
+  --panel-2: #f8f4f5;
+  --panel-3: #efe8ea;
+  --line: #ebe2e5;
+  --line-2: #d9ccd0;
+
+  /* Text */
+  --text: #160d10;
+  --text-2: #43363a;
+  --text-3: #6a5b60;
+  --text-4: #87787d;
+
+  /* Accent: burgundy */
+  --accent: #8a1538;
+  --accent-hi: #6f0f2c;
+  --accent-solid: #8a1538;
+  --accent-solid-hi: #a3193f;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 8%, transparent);
+  --accent-line: color-mix(in srgb, var(--accent) 32%, transparent);
+  --accent-glow: color-mix(in srgb, #b8224f 16%, transparent);
+
+  /* PayPal marks only */
+  --paypal: #0070e0;
+  --paypal-soft: color-mix(in srgb, var(--paypal) 10%, transparent);
+
+  /* Outcomes */
+  --pos: #12813f;
+  --warn: #a15c00;
+  --neg: #c4231b;
+  --pos-soft: color-mix(in srgb, var(--pos) 10%, transparent);
+  --warn-soft: color-mix(in srgb, var(--warn) 11%, transparent);
+  --neg-soft: color-mix(in srgb, var(--neg) 8%, transparent);
+
+  /* Agent identities: a mark beside the name, never colour alone */
+  --id-grocery: #0d9488;
+  --id-office: #4f46e5;
+  --id-travel: #c2410c;
+
+  /* Chrome */
+  --topbar-bg: color-mix(in srgb, var(--bg) 82%, transparent);
+  --dot: color-mix(in srgb, var(--text) 13%, transparent);
+  --glow-a: color-mix(in srgb, #b8224f 9%, transparent);
+  --glow-b: color-mix(in srgb, #0070e0 5%, transparent);
+
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 16px;
+  --shadow: 0 1px 2px rgba(40, 10, 20, 0.05), 0 8px 24px rgba(40, 10, 20, 0.06);
+  --shadow-lg: 0 2px 4px rgba(40, 10, 20, 0.04), 0 24px 48px -12px rgba(40, 10, 20, 0.16);
+  --panel-edge: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  --font: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --topbar-h: 60px;
+  color-scheme: light;
+}
+
+/* Dark is the signature look. The block is repeated for an explicit choice so the toggle beats the system. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e0a0c;
+    --bg-2: #130e10;
+    --panel: #171113;
+    --panel-2: #1d1518;
+    --panel-3: #261c20;
+    --line: #2a1f23;
+    --line-2: #3a2c31;
+    --text: #f6eff1;
+    --text-2: #c9bcc0;
+    --text-3: #9d8e93;
+    --text-4: #85777c;
+    --accent: #e8668c;
+    --accent-hi: #f38aa9;
+    --accent-solid: #a3193f;
+    --accent-solid-hi: #bd2450;
+    --accent-ink: #ffffff;
+    --accent-glow: color-mix(in srgb, #b8224f 30%, transparent);
+    --paypal: #4ea3ff;
+    --pos: #3ddc84;
+    --warn: #f5b83d;
+    --neg: #ff6b6b;
+    --id-grocery: #2dd4bf;
+    --id-office: #818cf8;
+    --id-travel: #fb923c;
+    --dot: color-mix(in srgb, #ffffff 9%, transparent);
+    --glow-a: color-mix(in srgb, #b8224f 22%, transparent);
+    --glow-b: color-mix(in srgb, #0070e0 8%, transparent);
+    --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 30px 60px -20px rgba(0, 0, 0, 0.75);
+    --panel-edge: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e0a0c;
+  --bg-2: #130e10;
+  --panel: #171113;
+  --panel-2: #1d1518;
+  --panel-3: #261c20;
+  --line: #2a1f23;
+  --line-2: #3a2c31;
+  --text: #f6eff1;
+  --text-2: #c9bcc0;
+  --text-3: #9d8e93;
+  --text-4: #85777c;
+  --accent: #e8668c;
+  --accent-hi: #f38aa9;
+  --accent-solid: #a3193f;
+  --accent-solid-hi: #bd2450;
+  --accent-ink: #ffffff;
+  --accent-glow: color-mix(in srgb, #b8224f 30%, transparent);
+  --paypal: #4ea3ff;
+  --pos: #3ddc84;
+  --warn: #f5b83d;
+  --neg: #ff6b6b;
+  --id-grocery: #2dd4bf;
+  --id-office: #818cf8;
+  --id-travel: #fb923c;
+  --dot: color-mix(in srgb, #ffffff 9%, transparent);
+  --glow-a: color-mix(in srgb, #b8224f 22%, transparent);
+  --glow-b: color-mix(in srgb, #0070e0 8%, transparent);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 30px 60px -20px rgba(0, 0, 0, 0.75);
+  --panel-edge: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  color-scheme: dark;
+}

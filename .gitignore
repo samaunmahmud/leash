@@ -1,0 +1,42 @@
+# ── Private / local-only — NEVER commit ──────────────────
+sam_data.md
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+.local/
+docs/private/
+
+# ── Secrets ──────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Java / Maven ─────────────────────────────────────────
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+hs_err_pid*
+
+# ── Node / Vite ──────────────────────────────────────────
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# ── Data ─────────────────────────────────────────────────
+data/
+*.db
+pgdata/
+
+# ── OS / editor ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+*.log
+*.swp
