@@ -58,7 +58,7 @@ public class DemoScenario {
         int count = 0;
         for (Req q : requests) {
             Decision d = engine.evaluate(m, q.request(), new SpendSnapshot(spent, count, false))
-                    .escalate(risk.assess(q.request(), q.page()));
+                    .escalate(risk.assess(new com.leash.risk.RiskContext(q.request(), q.page(), m, List.of())));
             if (d.outcome() != com.leash.policy.Outcome.BLOCK) {
                 spent += q.request().amountMinor(); // pending tugs count too
                 count++;

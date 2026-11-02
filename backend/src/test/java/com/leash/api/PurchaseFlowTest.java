@@ -197,6 +197,24 @@ class PurchaseFlowTest {
     }
 
     @Test
+    void identicalOrderMinutesLaterIsTuggedAsADuplicate() {
+        assertThat(buy(grocery(1_840)).json().get("outcome").asString()).isEqualTo("APPROVE");
+        clock.advance(Duration.ofMinutes(3));
+        var again = buy(grocery(1_840)).json();
+        assertThat(again.get("outcome").asString()).isEqualTo("TUG");
+        assertThat(again.get("reasons").findValuesAsString("code")).containsExactly("DUPLICATE_REQUEST");
+    }
+
+    @Test
+    void lookalikeMerchantIsBlockedWithNoAi() {
+        var body = grocery(900);
+        body.put("merchant", "Tesc0");
+        var j = buy(body).json();
+        assertThat(j.get("outcome").asString()).isEqualTo("BLOCK");
+        assertThat(j.get("reasons").findValuesAsString("code")).contains("LOOKALIKE_MERCHANT", "MERCHANT_NOT_ALLOWED");
+    }
+
+    @Test
     void paypalFailureIsRecordedNotLost() {
         fake.failNextCreateWith = 422;
         var j = buy(grocery(1_000)).json();
@@ -237,7 +255,11 @@ class PurchaseFlowTest {
         // £60 length, £15 each: exactly four fit, however the requests interleave.
         var pool = Executors.newFixedThreadPool(10);
         var calls = new ArrayList<Callable<String>>();
-        for (int i = 0; i < 10; i++) calls.add(() -> buy(grocery(1_500)).json().get("outcome").asString());
+        for (int i = 0; i < 10; i++) {
+            var body = grocery(1_500);
+            body.put("description", "Order " + i); // distinct, so the duplicate check stays out of it
+            calls.add(() -> buy(body).json().get("outcome").asString());
+        }
         var outcomes = new ArrayList<String>();
         for (var f : pool.invokeAll(calls)) outcomes.add(f.get());
         pool.shutdown();

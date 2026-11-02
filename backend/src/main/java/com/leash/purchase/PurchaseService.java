@@ -11,9 +11,12 @@ import com.leash.policy.PolicyEngine;
 import com.leash.policy.PurchaseRequest;
 import com.leash.policy.SpendSnapshot;
 import com.leash.risk.RiskChecker;
+import com.leash.risk.RiskContext;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,8 +86,13 @@ public class PurchaseService {
             SpendSnapshot spend = ledger.snapshot(leash.mandate(), leash.agent().revoked(), now);
             Decision decision = engine.evaluate(leash.mandate(), r, spend);
             // A revoked agent gets nothing else looked at, not even risk checks.
+            String riskExplanation = null;
             if (!leash.agent().revoked()) {
-                decision = decision.escalate(risk.assess(r, pages.textFor(r.sourceUrl(), cmd.pageText())));
+                var ctx = new RiskContext(r, pages.textFor(r.sourceUrl(), cmd.pageText()), leash.mandate(),
+                        history(cmd.agentId(), now));
+                var assessment = risk.assessWithExplanation(ctx);
+                decision = decision.escalate(assessment.reasons());
+                riskExplanation = assessment.explanation();
             }
 
             EntryStatus status = switch (decision.outcome()) {
@@ -98,12 +106,21 @@ public class PurchaseService {
                     ? new LedgerRepository.Tug("tug-" + requestId, requestId, "PENDING", now, null)
                     : null;
             entry = ledger.create(
-                    new LedgerEntry(requestId, r, decision, null, status, null, null, null, null, null, null, now, now), tug);
+                    new LedgerEntry(requestId, r, decision, riskExplanation, status, null, null, null, null, null, null, now, now), tug);
         }
 
         if (entry.decision().outcome() == Outcome.APPROVE) {
             entry = payments.pay(entry);
         }
         return PurchaseResult.of(ledger.get(entry.id()), false);
+    }
+
+    /** The agent's last 90 days, minus blocked attempts (an attack shouldn't teach Leash what "normal" is). */
+    private List<RiskContext.Past> history(String agentId, Instant now) {
+        return repo.since(agentId, now.minus(Duration.ofDays(90))).stream()
+                .filter(e -> e.status() != EntryStatus.BLOCKED)
+                .map(e -> new RiskContext.Past(e.request().merchant(), e.request().category(), e.request().description(),
+                        e.request().amountMinor(), e.request().requestedAt()))
+                .toList();
     }
 }
