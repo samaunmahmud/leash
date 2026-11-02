@@ -11,10 +11,12 @@ import java.time.ZoneId;
 @Configuration
 public class PolicyConfig {
 
-    /** Quiet hours are judged in UK time for the demo. Per-user zones come with real accounts (cut list). */
+    /** Quiet hours and period boundaries are judged in UK time for the demo. Per-user zones come with real accounts (cut list). */
+    public static final ZoneId ZONE = ZoneId.of("Europe/London");
+
     @Bean
     PolicyEngine policyEngine() {
-        return new PolicyEngine(ZoneId.of("Europe/London"));
+        return new PolicyEngine(ZONE);
     }
 
     @Bean

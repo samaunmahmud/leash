@@ -1,33 +1,63 @@
 package com.leash.api;
 
 import com.leash.config.LeashProperties;
+import com.leash.ledger.EntryStatus;
+import com.leash.purchase.PaymentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.HtmlUtils;
 
 /**
- * Where PayPal sends the payer after approving or cancelling (the return_url / cancel_url in each order).
- * T02 version: a plain "you can close this tab" page; the dev endpoint captures. T04 captures ledger orders here.
+ * Where PayPal sends the payer after approving or cancelling (the return_url / cancel_url set on each order).
+ *
+ * <p>return_url / cancel_url: https://developer.paypal.com/docs/api/orders/v2/#orders_create
+ * (payment_source.paypal.experience_context). The order ID arriving as the {@code token} query parameter is
+ * PayPal's documented redirect behaviour for Express Checkout
+ * (https://developer.paypal.com/api/nvp-soap/do-express-checkout-payment-nvp/) and matches the approve link
+ * (checkoutnow?token=ORDER-ID), but the Orders v2 reference doesn't spell it out: NEEDS A LIVE CHECK. That's why this
+ * is only a convenience. Without {@code token} nothing is captured, and POST /api/ledger/{id}/capture still works.
+ * Safety: capture only succeeds for an order the payer really approved in PayPal, so a forged visit here can't move
+ * money. PayerID is ignored (payer data).
  */
 @RestController
 @RequestMapping("/api/paypal")
 public class PayPalReturnController {
 
-    private final LeashProperties props;
+    private static final Logger log = LoggerFactory.getLogger(PayPalReturnController.class);
 
-    public PayPalReturnController(LeashProperties props) {
+    private final LeashProperties props;
+    private final PaymentService payments;
+
+    public PayPalReturnController(LeashProperties props, PaymentService payments) {
         this.props = props;
+        this.payments = payments;
     }
 
     @GetMapping(value = "/return", produces = MediaType.TEXT_HTML_VALUE)
-    public String approved() {
-        return page("Approved in PayPal", "Leash will capture the payment. You can close this tab.");
+    public String approved(@RequestParam(name = "token", required = false) String orderId) {
+        if (orderId == null || orderId.isBlank()) {
+            return page("Approved in PayPal", "You can close this tab.");
+        }
+        try {
+            return payments.captureByOrder(orderId)
+                    .map(e -> e.status() == EntryStatus.PAID
+                            ? page("Paid", "Leash captured the payment and recorded it in the ledger. You can close this tab.")
+                            : page("Payment problem", "PayPal didn't complete the payment. The ledger has the details."))
+                    .orElseGet(() -> page("Approved in PayPal", "This order isn't a Leash purchase (dev test?). Capture it from the dev endpoint."));
+        } catch (RuntimeException e) {
+            log.warn("Capture on return failed for order {}: {}", orderId, e.getMessage());
+            return page("Payment problem", "Leash couldn't capture the payment yet. Try the capture button in the ledger.");
+        }
     }
 
     @GetMapping(value = "/cancel", produces = MediaType.TEXT_HTML_VALUE)
-    public String cancelled() {
+    public String cancelled(@RequestParam(name = "token", required = false) String orderId) {
+        if (orderId != null && !orderId.isBlank()) payments.cancelByOrder(orderId);
         return page("Cancelled", "Nothing was paid. You can close this tab.");
     }
 

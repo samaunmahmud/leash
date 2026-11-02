@@ -43,6 +43,17 @@ class ApiTest {
     }
 
     @Test
+    void approvedPurchaseWithoutPayPalIsRecordedAsPayPalOff() throws Exception {
+        var body = "{\"agentId\":\"agent-office\",\"merchant\":\"Viking\",\"category\":\"stationery\","
+                + "\"description\":\"Pens\",\"amountMinor\":1200,\"currency\":\"GBP\"}";
+        var req = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/purchases"))
+                .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
+        var res = http.send(req, HttpResponse.BodyHandlers.ofString());
+        assertThat(res.statusCode()).isEqualTo(201);
+        assertThat(res.body()).contains("\"outcome\":\"APPROVE\"", "\"status\":\"PAYPAL_OFF\"");
+    }
+
+    @Test
     void demoLedgerShowsApproveTugBlock() throws Exception {
         var res = get("/api/demo/ledger");
         assertThat(res.statusCode()).isEqualTo(200);
