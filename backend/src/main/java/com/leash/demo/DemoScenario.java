@@ -2,7 +2,6 @@ package com.leash.demo;
 
 import com.leash.policy.Decision;
 import com.leash.policy.Mandate;
-import com.leash.policy.Period;
 import com.leash.policy.PolicyEngine;
 import com.leash.policy.PurchaseRequest;
 import com.leash.policy.SpendSnapshot;
@@ -10,12 +9,10 @@ import com.leash.risk.RiskChecker;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * The video's grocery scenario, run through the real engine and risk checker so the dashboard shows real decisions
@@ -39,11 +36,7 @@ public class DemoScenario {
     }
 
     public static Mandate groceryLeash() {
-        return new Mandate("m-grocery", "agent-larder", "Weekly groceries", "GBP", Period.WEEK,
-                6_000, 2_500, 6_000,
-                Set.of("Larder", "Tesco", "Sainsbury's"), Set.of(),
-                Set.of("groceries", "household"), Set.of("gift cards"),
-                6, LocalTime.of(0, 0), LocalTime.of(6, 0), true);
+        return com.leash.mandate.DemoLeashes.grocery();
     }
 
     public List<Entry> run() {
