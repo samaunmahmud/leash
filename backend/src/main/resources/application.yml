@@ -14,6 +14,19 @@ spring:
     username: ${LEASH_DB_USER:sa}
     password: ${LEASH_DB_PASSWORD:}
 
+  ai:
+    mcp:
+      server:
+        # Streamable HTTP at POST /mcp: https://docs.spring.io/spring-ai/reference/api/mcp/mcp-server-boot-starter-docs.html
+        protocol: STREAMABLE
+        type: SYNC
+        name: leash
+        version: 0.1.0
+        instructions: >-
+          Leash enforces your owner's spending rules. Call request_purchase before buying anything; it answers
+          APPROVE, TUG (wait for your owner) or BLOCK. Never retry a blocked purchase. Use check_budget and
+          get_mandate to plan within the rules.
+
 leash:
   paypal:
     base-url: ${LEASH_PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}

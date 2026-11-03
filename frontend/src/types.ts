@@ -110,6 +110,16 @@ export interface LeashCard {
   mandate: Mandate;
   sourceText: string | null;
   usage?: Usage;
+  /** Start of the agent's live key ("lk_Ab3dE9f"), null if none. The key itself is only ever shown once. */
+  keyPrefix?: string | null;
+}
+
+/** A freshly issued agent key: shown once, never fetched again. */
+export interface AgentKey {
+  agentId: string;
+  key: string;
+  prefix: string;
+  mcpUrl: string;
 }
 
 export interface Tug {

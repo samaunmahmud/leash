@@ -8,6 +8,7 @@ import type {
   ProblemDetail,
   TugView,
   WalletView,
+  AgentKey,
 } from "./types";
 import { SAMPLE_LEDGER } from "./lib/sample";
 
@@ -73,6 +74,7 @@ export const createLeash = (agentName: string, kind: string, mandate: MandateInp
   post<LeashCard>("/api/leashes", { agentName, kind, mandate });
 export const updateMandate = (agentId: string, mandate: MandateInput) =>
   put<LeashCard>(`/api/leashes/${encodeURIComponent(agentId)}/mandate`, mandate);
+export const issueAgentKey = (agentId: string) => post<AgentKey>(`/api/leashes/${encodeURIComponent(agentId)}/key`);
 export const parseMandate = (text: string) => post<ParsedMandate>("/api/mandates/parse", { text });
 
 // ── Tugs ──

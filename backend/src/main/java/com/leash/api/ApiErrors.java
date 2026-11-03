@@ -18,6 +18,11 @@ public class ApiErrors {
         return problem(HttpStatus.NOT_FOUND, "Not found", e.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    ProblemDetail forbidden(ForbiddenException e) {
+        return problem(HttpStatus.FORBIDDEN, "Forbidden", e.getMessage());
+    }
+
     @ExceptionHandler(NotConfiguredException.class)
     ProblemDetail notConfigured(NotConfiguredException e) {
         return problem(HttpStatus.SERVICE_UNAVAILABLE, "Not configured", e.getMessage());

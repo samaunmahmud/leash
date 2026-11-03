@@ -34,7 +34,16 @@ public class PurchaseController {
 
     /** 201 for a new decision; 200 when a repeated requestId returns the stored one. Blocks are still 201: a decision was made. */
     @PostMapping("/api/purchases")
-    public ResponseEntity<PurchaseResult> request(@Valid @RequestBody PurchaseCommand cmd) {
+    public ResponseEntity<PurchaseResult> request(@Valid @RequestBody PurchaseCommand cmd,
+                                                  jakarta.servlet.http.HttpServletRequest http) {
+        // With an agent key the key decides the leash; a different agentId in the body is refused, not ignored.
+        if (http.getAttribute(com.leash.mcp.AgentAuthFilter.AGENT_ATTR) instanceof String keyAgent) {
+            if (cmd.agentId() != null && !cmd.agentId().isBlank() && !cmd.agentId().equals(keyAgent)) {
+                throw new ForbiddenException("This agent key belongs to another agent. An agent can only spend under its own leash.");
+            }
+            cmd = cmd.withAgent(keyAgent);
+        }
+        if (cmd.agentId() == null || cmd.agentId().isBlank()) throw new IllegalArgumentException("agentId is required");
         PurchaseResult result = purchases.request(cmd);
         return ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED).body(result);
     }

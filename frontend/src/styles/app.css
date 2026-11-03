@@ -42,7 +42,9 @@
 .leash-card .card-head h3 { display: flex; align-items: center; }
 .leash-card.is-snapped { border-color: color-mix(in srgb, var(--neg) 35%, var(--line)); }
 .leash-card.is-snapped .leash-body { opacity: 0.7; }
-.leash-body { display: grid; gap: 14px; padding: 16px 20px; flex: 1; }
+/* minmax(0, 1fr): long content (an agent key) wraps instead of widening the card. align-content: start: a taller
+   neighbour in the same row must not stretch this card's rows. */
+.leash-body { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 14px; padding: 16px 20px; flex: 1; }
 .leash-body .length { min-width: 0; }
 .length-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .length-head .num { font-weight: 650; }
@@ -73,6 +75,14 @@
   .wallet-actions { width: 100%; }
   .wallet-actions .btn { flex: 1; }
 }
+
+/* ── Agent key (shown once) ──────────────────────────── */
+.key-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px 14px; border-radius: var(--r); border: 1px solid var(--accent-line); background: var(--accent-soft); min-width: 0; }
+.key-value { display: block; padding: 8px 10px; border-radius: var(--r-sm); background: var(--panel); border: 1px solid var(--line); font-size: 12.5px; overflow-wrap: anywhere; user-select: all; }
+.key-panel summary { cursor: pointer; color: var(--text-2); }
+.key-config { margin: 8px 0 0; padding: 10px; max-height: 220px; overflow: auto; border-radius: var(--r-sm); background: var(--panel); border: 1px solid var(--line); font-size: 11.5px; white-space: pre; }
+.key-panel .entry-actions { margin-top: 2px; }
+.key-panel > p { overflow-wrap: anywhere; }
 
 /* ── Tugs ────────────────────────────────────────────── */
 .tug-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }

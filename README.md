@@ -32,7 +32,7 @@ AI agents can now browse, compare and check out. But handing one your card is al
 | Step | What happens |
 |---|---|
 | **Leash an agent** | Write a mandate like *"Groceries, £60 a week, supermarkets only, ask me over £25"*. AI turns it into rules; you confirm them. |
-| **The agent asks first** | Any agent calls Leash (MCP or REST) before spending. |
+| **The agent asks first** | Any agent calls Leash before spending, over MCP or REST, with its own agent key. |
 | **Policy engine** | Deterministic Java rules: length (period limit), slack (auto-approve threshold), merchants, categories, velocity, quiet hours. |
 | **AI risk check** | Reads the task, the basket and the page the agent came from. It can only make a decision *stricter*, never looser. |
 | **PayPal executes** | Approved purchases become PayPal sandbox orders. Borderline ones send you a **tug** to approve. |
@@ -77,6 +77,54 @@ cd frontend && npm test
 ```
 
 The backend tests run on H2 in PostgreSQL mode. With Docker running they also boot the app against a real Postgres (Testcontainers) and check that data survives a restart.
+
+## Connect any agent (MCP)
+
+Leash is an MCP server (Streamable HTTP at `http://localhost:8080/mcp`), so any MCP-capable agent can be put on a leash. Each agent authenticates with its own key, and the key decides which leash it spends under: one agent can never spend under another's.
+
+1. In the dashboard, open **Leashes** and press **Agent key** on a leash card. The key (`lk_…`) is shown once; Leash stores only its hash. Pressing it again replaces the key.
+2. Point your MCP client at the URL with `Authorization: Bearer <key>`.
+
+| Tool | What it does |
+|---|---|
+| `request_purchase` | Ask before buying. Answers `APPROVE` (paid, or confirmed in PayPal), `TUG` (the owner was asked; call again with the same `requestId` to see the answer) or `BLOCK` (refused; the agent is told never to retry it). `amount` is a decimal string such as `"18.40"`, never a float. |
+| `check_budget` | Length, spent, waiting for approval, left, and the auto-approve amount. |
+| `get_mandate` | The leash's rules in a form a model can plan with. |
+
+**Claude Desktop.** Claude Desktop's config file launches local servers, so use the [`mcp-remote`](https://github.com/geelen/mcp-remote) bridge. Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) and restart Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "leash": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote", "http://localhost:8080/mcp",
+        "--header", "Authorization:${LEASH_AGENT_KEY}",
+        "--allow-http", "--transport", "http-only"
+      ],
+      "env": { "LEASH_AGENT_KEY": "Bearer lk_your_agent_key" }
+    }
+  }
+}
+```
+
+(`--allow-http` because the local server is plain HTTP. On a deployed HTTPS Leash, drop it and use the `https://…/mcp` URL.)
+
+**Check it with the MCP Inspector:**
+
+```bash
+npx @modelcontextprotocol/inspector --cli http://localhost:8080/mcp --transport http \
+  --header "Authorization: Bearer lk_your_agent_key" --method tools/list
+npx @modelcontextprotocol/inspector --cli http://localhost:8080/mcp --transport http \
+  --header "Authorization: Bearer lk_your_agent_key" --method tools/call --tool-name request_purchase \
+  --tool-arg merchant=Larder --tool-arg category=groceries --tool-arg "description=Milk, eggs, bread" \
+  --tool-arg 'amount="18.40"' --tool-arg "task=Buy this week's groceries"
+```
+
+(Quote the amount as shown, `'amount="18.40"'`: the Inspector otherwise sends it as a number and the tool's schema refuses it.)
+
+The REST endpoint `POST /api/purchases` takes the same `Authorization: Bearer` key.
 
 ## How it's built
 

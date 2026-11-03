@@ -25,28 +25,49 @@ public class LeashController {
 
     private final MandateService leashes;
     private final LedgerService ledger;
+    private final com.leash.agent.AgentKeys keys;
+    private final com.leash.config.LeashProperties props;
 
-    public LeashController(MandateService leashes, LedgerService ledger) {
+    public LeashController(MandateService leashes, LedgerService ledger, com.leash.agent.AgentKeys keys,
+                           com.leash.config.LeashProperties props) {
         this.leashes = leashes;
         this.ledger = ledger;
+        this.keys = keys;
+        this.props = props;
     }
 
+    /**
+     * Issues (or rotates) this agent's key and returns it once, with the MCP URL. The old key stops working at once.
+     * The dashboard has no login yet (real accounts are on the cut list), so this is fine for a local or sandbox demo
+     * but must sit behind owner auth before Leash is exposed publicly.
+     */
+    @PostMapping("/{agentId}/key")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AgentKey issueKey(@PathVariable String agentId) {
+        var issued = keys.issue(agentId);
+        return new AgentKey(agentId, issued.key(), issued.prefix(), props.publicUrl() + "/mcp");
+    }
+
+    public record AgentKey(String agentId, String key, String prefix, String mcpUrl) {}
+
     /** A leash plus how much of its length is used this period: what a leash card shows. */
+    /** @param keyPrefix the start of the agent's live key, or null if it has none (never the key itself) */
     public record LeashCard(com.leash.agent.Agent agent, com.leash.policy.Mandate mandate, String sourceText,
-                            LedgerService.Usage usage) {
-        static LeashCard of(Leash l, LedgerService ledger) {
-            return new LeashCard(l.agent(), l.mandate(), l.sourceText(), ledger.usage(l.mandate()));
+                            LedgerService.Usage usage, String keyPrefix) {
+        static LeashCard of(Leash l, LedgerService ledger, com.leash.agent.AgentKeys keys) {
+            return new LeashCard(l.agent(), l.mandate(), l.sourceText(), ledger.usage(l.mandate()),
+                    keys.prefixFor(l.agent().id()).orElse(null));
         }
     }
 
     @GetMapping
     public List<LeashCard> list() {
-        return leashes.list().stream().map(l -> LeashCard.of(l, ledger)).toList();
+        return leashes.list().stream().map(l -> LeashCard.of(l, ledger, keys)).toList();
     }
 
     @GetMapping("/{agentId}")
     public LeashCard get(@PathVariable String agentId) {
-        return LeashCard.of(leashes.get(agentId), ledger);
+        return LeashCard.of(leashes.get(agentId), ledger, keys);
     }
 
     @PostMapping

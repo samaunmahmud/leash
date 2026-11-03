@@ -19,13 +19,32 @@
 
     <properties>
         <java.version>21</java.version>
+        <spring-ai.version>2.0.2</spring-ai.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring AI 2.0 (Spring Boot 4 line): only its MCP server starter is used, which wraps the official MCP Java SDK. -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- REST API, RestClient for PayPal, SSE later -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- MCP server (Streamable HTTP at /mcp) so any agent can be leashed: https://docs.spring.io/spring-ai/reference/api/mcp/mcp-server-boot-starter-docs.html -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
         </dependency>
         <!-- Bean Validation for mandates and AI JSON outputs -->
         <dependency>
