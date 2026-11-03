@@ -51,16 +51,19 @@ AI agents can now browse, compare and check out. But handing one your card is al
 
 ## Run it locally
 
-Requirements: Java 21, Maven 3.9+, Node 20+.
+Requirements: Java 21, Maven 3.9+, Node 20+, Docker (for Postgres).
 
 ```bash
 cp .env.example .env            # add your PayPal sandbox credentials
+docker compose up -d            # Postgres 17 on localhost:5432, data kept in a Docker volume
 cd backend && mvn spring-boot:run
 # new terminal
 cd frontend && npm install && npm run dev
 ```
 
 Open http://localhost:5173. The API runs on http://localhost:8080 (`/api/health`).
+
+No Docker? Remove the `LEASH_DB_*` lines from `.env` and the backend uses an in-memory database instead (it starts fresh on every restart).
 
 Tests:
 
@@ -69,9 +72,11 @@ cd backend && mvn test
 cd frontend && npm test
 ```
 
+The backend tests run on H2 in PostgreSQL mode. With Docker running they also boot the app against a real Postgres (Testcontainers) and check that data survives a restart.
+
 ## How it's built
 
-- **Backend:** Java 21, Spring Boot 4. A pure policy engine (no framework code) with unit tests, and a PayPal REST client (OAuth, Orders v2).
+- **Backend:** Java 21, Spring Boot 4. A pure policy engine (no framework code) with unit tests, and a PayPal REST client (OAuth, Orders v2). Postgres with Flyway migrations, plain JDBC.
 - **AI:** any OpenAI-compatible model for the mandate parser and the risk checker. Structured JSON output, validated, with a heuristic fallback.
 - **Frontend:** React 18, TypeScript, Vite.
 - **PayPal:** Orders v2 (create and capture), sandbox accounts, with Vault and webhooks planned.

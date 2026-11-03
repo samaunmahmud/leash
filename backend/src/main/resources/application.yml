@@ -8,7 +8,8 @@ spring:
     # Reads ../.env when running from backend/ and .env when running from the repo root. Missing files are fine.
     import: "optional:file:../.env[.properties],optional:file:.env[.properties]"
   datasource:
-    # H2 in PostgreSQL mode until T08 points this at Postgres.
+    # Postgres when LEASH_DB_URL is set (e.g. jdbc:postgresql://localhost:5432/leash from docker-compose.yml).
+    # Unset: in-memory H2 in PostgreSQL mode, so the app still starts with zero setup, but data is lost on restart.
     url: ${LEASH_DB_URL:jdbc:h2:mem:leash;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1}
     username: ${LEASH_DB_USER:sa}
     password: ${LEASH_DB_PASSWORD:}

@@ -18,6 +18,17 @@ public class AppConfig {
         return Clock.systemUTC();
     }
 
+    /** Says loudly when nothing will survive a restart, so nobody records a demo thinking data is kept. */
+    @Bean
+    ApplicationRunner warnIfInMemory(@org.springframework.beans.factory.annotation.Value("${spring.datasource.url:}") String url) {
+        return args -> {
+            if (url.startsWith("jdbc:h2:mem:")) {
+                org.slf4j.LoggerFactory.getLogger(AppConfig.class).warn(
+                        "Using an in-memory database: data is lost on restart. Run `docker compose up -d` and set LEASH_DB_URL (see .env.example).");
+            }
+        };
+    }
+
     /** Seeds the three demo leashes on an empty database. */
     @Bean
     @ConditionalOnBooleanProperty(name = "leash.seed-demo", matchIfMissing = true)

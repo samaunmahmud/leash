@@ -80,16 +80,16 @@ public class LedgerRepository {
     /** Newest first. {@code agentId} null means every agent. */
     public List<LedgerEntry> list(String agentId, int limit) {
         if (agentId == null) {
-            return jdbc.sql(SELECT + "ORDER BY l.requested_at DESC, l.created_at DESC LIMIT ?").param(limit)
+            return jdbc.sql(SELECT + "ORDER BY l.requested_at DESC, l.created_at DESC, l.id DESC LIMIT ?").param(limit)
                     .query(LedgerRepository::map).list();
         }
-        return jdbc.sql(SELECT + "WHERE l.agent_id = ? ORDER BY l.requested_at DESC, l.created_at DESC LIMIT ?")
+        return jdbc.sql(SELECT + "WHERE l.agent_id = ? ORDER BY l.requested_at DESC, l.created_at DESC, l.id DESC LIMIT ?")
                 .params(agentId, limit).query(LedgerRepository::map).list();
     }
 
     /** Entries for one agent since a moment, oldest first (risk history, walk reports). */
     public List<LedgerEntry> since(String agentId, Instant from) {
-        return jdbc.sql(SELECT + "WHERE l.agent_id = ? AND l.requested_at >= ? ORDER BY l.requested_at")
+        return jdbc.sql(SELECT + "WHERE l.agent_id = ? AND l.requested_at >= ? ORDER BY l.requested_at, l.created_at, l.id")
                 .params(agentId, Db.ts(from)).query(LedgerRepository::map).list();
     }
 
@@ -132,9 +132,9 @@ public class LedgerRepository {
 
     public List<Tug> tugs(String status) {
         if (status == null) {
-            return jdbc.sql("SELECT * FROM tugs ORDER BY created_at DESC").query(LedgerRepository::mapTug).list();
+            return jdbc.sql("SELECT * FROM tugs ORDER BY created_at DESC, id DESC").query(LedgerRepository::mapTug).list();
         }
-        return jdbc.sql("SELECT * FROM tugs WHERE status = ? ORDER BY created_at DESC").param(status)
+        return jdbc.sql("SELECT * FROM tugs WHERE status = ? ORDER BY created_at DESC, id DESC").param(status)
                 .query(LedgerRepository::mapTug).list();
     }
 
