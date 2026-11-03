@@ -113,18 +113,23 @@ public final class HeuristicRiskChecker implements RiskChecker {
             while (m.find()) {
                 String hidden = m.group(m.groupCount());
                 if (hidden != null && (IMPERATIVE.matcher(hidden).find() || anyPhrase(hidden))) {
+                    // Quote the hidden text from the original page (same offsets: lower-casing ASCII keeps them), so
+                    // the reason card can show the owner exactly what the page tried to slip past them.
+                    String quote = page.length() == lowerPage.length()
+                            ? page.substring(m.start(m.groupCount()), m.end(m.groupCount())) : hidden;
                     return java.util.Optional.of(new Reason(RuleCode.PROMPT_INJECTION,
-                            "The page hides text from people that tells the agent to buy something. That's a prompt-injection attack."));
+                            "The page hides text from people that tells the agent to buy something. That's a prompt-injection attack.",
+                            stripTags(quote)));
                 }
             }
         }
         if (ZERO_WIDTH.matcher(lowerAll).find() && (anyPhrase(plain) || IMPERATIVE.matcher(plain).find())) {
             return java.util.Optional.of(new Reason(RuleCode.PROMPT_INJECTION,
-                    "The page uses invisible characters around instructions to the agent."));
+                    "The page uses invisible characters around instructions to the agent.", phraseContext(plain)));
         }
         if (anyPhrase(plain)) {
             return java.util.Optional.of(new Reason(RuleCode.PROMPT_INJECTION,
-                    "The page or request contains text that tries to give the agent new instructions."));
+                    "The page or request contains text that tries to give the agent new instructions.", phraseContext(plain)));
         }
         return java.util.Optional.empty();
     }
@@ -210,7 +215,26 @@ public final class HeuristicRiskChecker implements RiskChecker {
 
     private static Reason lookalikeReason(String merchant, String known) {
         return new Reason(RuleCode.LOOKALIKE_MERCHANT,
-                "\"" + merchant + "\" looks like an imitation of " + known + ". Leash won't pay a look-alike shop.");
+                "\"" + merchant + "\" looks like an imitation of " + known + ". Leash won't pay a look-alike shop.",
+                merchant + " ≈ " + known);
+    }
+
+    /** The sentence around the first instruction phrase, as evidence. */
+    private static String phraseContext(String lower) {
+        for (Pattern p : INSTRUCTION_PHRASES) {
+            Matcher m = p.matcher(lower);
+            if (m.find()) {
+                int start = Math.max(0, lower.lastIndexOf('.', m.start()) + 1);
+                int dot = lower.indexOf('.', m.end());
+                int end = dot < 0 ? Math.min(lower.length(), m.end() + 120) : dot + 1;
+                return stripTags(lower.substring(start, end));
+            }
+        }
+        return null;
+    }
+
+    private static String stripTags(String s) {
+        return s == null ? null : s.replaceAll("<[^>]*>", " ");
     }
 
     private static boolean anyPhrase(String lower) {

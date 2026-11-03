@@ -18,6 +18,8 @@ export type EntryStatus =
 export interface Reason {
   code: string;
   message: string;
+  /** Short quote of what triggered it (e.g. the hidden text on a poisoned page). Untrusted: render as text only. */
+  evidence?: string | null;
 }
 
 export interface Decision {

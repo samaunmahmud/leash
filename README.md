@@ -36,7 +36,7 @@ AI agents can now browse, compare and check out. But handing one your card is al
 | **Policy engine** | Deterministic Java rules: length (period limit), slack (auto-approve threshold), merchants, categories, velocity, quiet hours. |
 | **AI risk check** | Reads the task, the basket and the page the agent came from. It can only make a decision *stricter*, never looser. |
 | **PayPal executes** | Approved purchases become PayPal sandbox orders. Borderline ones send you a **tug** to approve. |
-| **Ledger** | Every attempt, paid or blocked, is recorded with a plain-English reason. |
+| **Ledger** | Every attempt, paid or blocked, is recorded. Its reason card shows each check's verdict (rules, risk checks, AI, final), leads with the worst reason, and quotes what a poisoned page tried to hide. |
 | **Snap back** | One click revokes an agent instantly. |
 
 ## Use cases
