@@ -7,6 +7,7 @@ import { LeashCards } from "./LeashCards";
 import { TugList } from "./TugList";
 import { LedgerGrid } from "./LedgerGrid";
 import { NewLeash } from "./NewLeash";
+import { WalletCard } from "./WalletCard";
 
 const TAB_LABEL: Record<Tab, string> = { leashes: "Leashes", tugs: "Tugs", ledger: "Ledger", new: "New leash" };
 
@@ -59,7 +60,10 @@ export function Dashboard({ tab }: { tab: Tab }) {
         {!data.loaded ? (
           <p className="empty">Loading…</p>
         ) : tab === "leashes" ? (
-          <LeashCards leashes={data.leashes} onChanged={data.refresh} />
+          <div className="stack">
+            <WalletCard />
+            <LeashCards leashes={data.leashes} onChanged={data.refresh} />
+          </div>
         ) : tab === "tugs" ? (
           <TugList tugs={data.tugs} leashes={data.leashes} onChanged={data.refresh} />
         ) : tab === "ledger" ? (

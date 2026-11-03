@@ -65,6 +65,8 @@ Open http://localhost:5173. The API runs on http://localhost:8080 (`/api/health`
 
 AI is optional. Without `LEASH_LLM_*` Leash uses its rule-based mandate reader and risk checks. To turn it on with Gemini, add an [AI Studio key](https://aistudio.google.com/apikey) and keep the Gemini settings from `.env.example` (`gemini-3.5-flash-lite`, `reasoning_effort=minimal`). Any OpenAI-compatible endpoint works the same way. The free tier allows about 20 requests per model per day, and each purchase or mandate reading uses one or two.
 
+**Pay while you're away (optional):** on the dashboard's Leashes tab press **Save PayPal**, approve once in the sandbox with your *Personal* sandbox account, and come back. Your sandbox REST app needs **Vault** ticked under *Sandbox App Settings → Advanced options*.
+
 No Docker? Remove the `LEASH_DB_*` lines from `.env` and the backend uses an in-memory database instead (it starts fresh on every restart).
 
 Tests:
@@ -81,7 +83,7 @@ The backend tests run on H2 in PostgreSQL mode. With Docker running they also bo
 - **Backend:** Java 21, Spring Boot 4. A pure policy engine (no framework code) with unit tests, and a PayPal REST client (OAuth, Orders v2). Postgres with Flyway migrations, plain JDBC.
 - **AI:** any OpenAI-compatible model for the mandate parser and the risk checker. Structured JSON output, validated, with a heuristic fallback.
 - **Frontend:** React 18, TypeScript, Vite.
-- **PayPal:** Orders v2 (create and capture), sandbox accounts, with Vault and webhooks planned.
+- **PayPal:** Orders v2 (create and capture) and Vault v3. Save your PayPal once (setup token → payment token) and approved purchases are charged to the saved token with no popup, as merchant-initiated orders. Leash stores only PayPal's token ID and a masked email hint. Without a saved wallet, or if PayPal refuses the saved one, each purchase gets an approve link instead. Webhooks are planned.
 
 ## License
 

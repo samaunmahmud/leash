@@ -44,6 +44,10 @@ public final class FakePayPalServer implements AutoCloseable {
     /** Capture fails with 422 ORDER_NOT_APPROVED unless the order was approved via {@link #approve}. */
     public volatile boolean requireApprovalBeforeCapture = false;
     public volatile String webhookVerification = "SUCCESS";
+    /** null: payment-token creation succeeds. false: fails as if the owner never approved the setup token. */
+    public volatile Boolean setupApproval = null;
+    /** When set, the next vault order fails with this HTTP status (then resets). */
+    public volatile int failNextVaultOrderWith = 0;
 
     public FakePayPalServer() {
         try {
@@ -92,6 +96,8 @@ public final class FakePayPalServer implements AutoCloseable {
         requireApprovalBeforeCapture = false;
         webhookVerification = "SUCCESS";
         tokenExpiresIn = 32_400;
+        setupApproval = null;
+        failNextVaultOrderWith = 0;
     }
 
     @Override
@@ -142,7 +148,19 @@ public final class FakePayPalServer implements AutoCloseable {
                 send(ex, 201, Map.of("id", id, "status", "PAYER_ACTION_REQUIRED", "links", List.of(
                         Map.of("href", "https://www.sandbox.paypal.com/agreements/approve?approval_session_id=" + id, "rel", "approve", "method", "GET"))));
             } else if (method.equals("POST") && path.equals("/v3/vault/payment-tokens")) {
-                send(ex, 201, Map.of("id", "VAULT-" + seq.incrementAndGet(), "customer", Map.of("id", "CUST-1")));
+                // Shape from the Vault v3 spec: id, customer.id, payment_source.paypal.{email_address, payer_id, ...}.
+                // Payer fields are included so tests can prove Leash keeps none of them.
+                if (setupApproval != null && !setupApproval) {
+                    send(ex, 422, Map.of("name", "UNPROCESSABLE_ENTITY", "debug_id", "dbgvault",
+                            "details", List.of(Map.of("issue", "SETUP_TOKEN_NOT_APPROVED"))));
+                    return;
+                }
+                send(ex, 201, Map.of("id", "VAULT-" + seq.incrementAndGet(), "customer", Map.of("id", "CUST-1"),
+                        "payment_source", Map.of("paypal", Map.of("email_address", "sam@personal.example.com",
+                                "payer_id", "PAYERID123", "name", Map.of("given_name", "Sam", "surname", "Owner")))));
+            } else if (method.equals("DELETE") && path.matches("/v3/vault/payment-tokens/[^/]+")) {
+                ex.sendResponseHeaders(204, -1);
+                ex.close();
             } else if (method.equals("POST") && path.equals("/v1/notifications/verify-webhook-signature")) {
                 send(ex, 200, Map.of("verification_status", webhookVerification));
             } else {
@@ -175,6 +193,13 @@ public final class FakePayPalServer implements AutoCloseable {
         order.put("id", id);
         order.put("intent", body.get("intent"));
         order.put("purchase_units", units);
+        if (paypal.get("vault_id") != null && failNextVaultOrderWith != 0) {
+            int status = failNextVaultOrderWith;
+            failNextVaultOrderWith = 0;
+            send(ex, status, Map.of("name", "UNPROCESSABLE_ENTITY", "debug_id", "dbgdecl",
+                    "details", List.of(Map.of("issue", "INSTRUMENT_DECLINED"))));
+            return;
+        }
         if (paypal.get("vault_id") != null) {
             // A saved wallet: PayPal completes the order in the create call, no buyer redirect.
             order.put("status", "COMPLETED");

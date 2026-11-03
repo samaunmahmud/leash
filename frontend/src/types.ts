@@ -157,3 +157,11 @@ export interface ProblemDetail {
   detail?: string;
   status?: number;
 }
+
+/** The owner's saved PayPal (T11). Only a masked hint ever reaches the browser. */
+export interface WalletView {
+  status: "NONE" | "PENDING" | "ACTIVE";
+  hint: string | null;
+  approveUrl: string | null;
+  paypalConfigured: boolean;
+}

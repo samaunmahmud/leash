@@ -13,7 +13,7 @@ public enum EntryStatus {
     DENIED,
     /** Approved; Leash is talking to PayPal right now. */
     PROCESSING,
-    /** PayPal order created; the payer still has to approve it (no saved wallet yet, see T11). */
+    /** PayPal order created; the payer still has to approve it (no saved PayPal, or the saved one was refused). */
     AWAITING_PAYER,
     /** Captured in PayPal. */
     PAID,

@@ -56,6 +56,24 @@
 .card-foot { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--panel-2); }
 .form-error { color: var(--neg); font-size: 13px; }
 
+/* ── Saved PayPal ────────────────────────────────────── */
+.stack { display: grid; gap: 16px; }
+.wallet { display: flex; align-items: center; justify-content: space-between; gap: 14px 24px; flex-wrap: wrap; padding: 16px 20px; }
+.wallet-main { display: flex; gap: 14px; align-items: flex-start; flex: 1 1 360px; min-width: 0; }
+.wallet-icon { flex: none; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; color: var(--paypal); background: var(--paypal-soft); }
+.wallet-icon svg { width: 22px; height: 22px; }
+.wallet-text { display: grid; gap: 4px; min-width: 0; }
+.wallet-text h3 { font-size: 15px; font-weight: 650; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wallet-state { --tone: var(--text-3); }
+.wallet.is-active .wallet-state { --tone: var(--pos); }
+.wallet.is-pending .wallet-state { --tone: var(--warn); }
+.wallet.is-active { border-color: color-mix(in srgb, var(--pos) 28%, var(--line)); }
+.wallet-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .wallet-actions { width: 100%; }
+  .wallet-actions .btn { flex: 1; }
+}
+
 /* ── Tugs ────────────────────────────────────────────── */
 .tug-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .tug { display: flex; gap: 16px 24px; padding: 18px 20px; border-left: 3px solid var(--tone); flex-wrap: wrap; }

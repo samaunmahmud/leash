@@ -10,6 +10,7 @@ import com.leash.paypal.PayPalClient.PayPalOrder;
 import com.leash.paypal.PayPalException;
 import com.leash.policy.Money;
 import com.leash.policy.Outcome;
+import com.leash.vault.WalletService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,11 +29,13 @@ public class PaymentService {
     private final PayPalClient paypal;
     private final LedgerService ledger;
     private final LedgerRepository repo;
+    private final WalletService wallet;
 
-    public PaymentService(PayPalClient paypal, LedgerService ledger, LedgerRepository repo) {
+    public PaymentService(PayPalClient paypal, LedgerService ledger, LedgerRepository repo, WalletService wallet) {
         this.paypal = paypal;
         this.ledger = ledger;
         this.repo = repo;
+        this.wallet = wallet;
     }
 
     /**
@@ -48,16 +51,34 @@ public class PaymentService {
             return ledger.update(e.withStatus(EntryStatus.PAYPAL_OFF,
                     "Approved, but PayPal isn't configured, so no order was created.", ledger.now()));
         }
+        String description = r.merchant() + ": " + r.description();
+        String fallbackNote = "";
+        var vaultId = wallet.activeVaultId();
+        if (vaultId.isPresent()) {
+            try {
+                PayPalOrder order = paypal.createVaultOrder(e.id(), vaultId.get(), r.amountMinor(), r.currency(), description);
+                if (!order.completed() && "APPROVED".equals(order.status())) order = paypal.captureOrder(order.id());
+                if (order.completed() && order.captureId() != null) {
+                    return ledger.update(e.withPayPal(order.id(), order.captureId(), null, ledger.now())
+                            .withStatus(EntryStatus.PAID, "Paid via PayPal sandbox with your saved PayPal (no popup).", ledger.now()));
+                }
+                fallbackNote = "Your saved PayPal returned " + order.status() + ", so this one needs your approval. ";
+                log.warn("Vault order {} for {} came back {}; falling back to an approve link", order.id(), e.id(), order.status());
+            } catch (PayPalException ex) {
+                // A declined or refused saved wallet must not lose the purchase: ask the human instead.
+                fallbackNote = "Your saved PayPal couldn't be charged (" + ex.getMessage() + "), so this one needs your approval. ";
+                log.warn("Vault payment for {} failed, falling back to an approve link: {}", e.id(), ex.getMessage());
+            }
+        }
         try {
-            PayPalOrder order = paypal.createOrder(e.id(), r.amountMinor(), r.currency(),
-                    r.merchant() + ": " + r.description());
+            PayPalOrder order = paypal.createOrder(e.id(), r.amountMinor(), r.currency(), description);
             if (order.completed()) {
                 return ledger.update(e.withPayPal(order.id(), order.captureId(), null, ledger.now())
                         .withStatus(EntryStatus.PAID, "Paid via PayPal sandbox.", ledger.now()));
             }
             return ledger.update(e.withPayPal(order.id(), null, order.approveUrl().orElse(null), ledger.now())
                     .withStatus(EntryStatus.AWAITING_PAYER,
-                            "PayPal order created. Waiting for the payer to approve " + Money.format(r.amountMinor(), r.currency()) + ".",
+                            fallbackNote + "PayPal order created. Waiting for the payer to approve " + Money.format(r.amountMinor(), r.currency()) + ".",
                             ledger.now()));
         } catch (PayPalException ex) {
             log.warn("Payment for {} failed: {}", e.id(), ex.getMessage());

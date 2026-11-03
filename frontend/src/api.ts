@@ -7,6 +7,7 @@ import type {
   ParsedMandate,
   ProblemDetail,
   TugView,
+  WalletView,
 } from "./types";
 import { SAMPLE_LEDGER } from "./lib/sample";
 
@@ -45,6 +46,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 const get = <T>(path: string) => request<T>("GET", path);
 const post = <T>(path: string, body?: unknown) => request<T>("POST", path, body ?? {});
 const put = <T>(path: string, body: unknown) => request<T>("PUT", path, body);
+const del = <T>(path: string) => request<T>("DELETE", path);
 
 export async function fetchHealth(): Promise<Health | null> {
   try {
@@ -87,3 +89,9 @@ export const refundEntry = (id: string) => post<LedgerEntry>(`/api/ledger/${enco
 // ── Demo ──
 export const runDemo = () => post<unknown>("/api/demo/run?paceMs=1800&reset=true");
 export const resetDemo = () => post<void>("/api/demo/reset");
+
+// ── Saved PayPal (pay while you're away) ──
+export const fetchWallet = () => get<WalletView>("/api/wallet");
+export const startWallet = () => post<WalletView>("/api/wallet/setup");
+export const completeWallet = () => post<WalletView>("/api/wallet/complete");
+export const forgetWallet = () => del<WalletView>("/api/wallet");

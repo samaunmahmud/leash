@@ -32,10 +32,35 @@ public class PayPalReturnController {
 
     private final LeashProperties props;
     private final PaymentService payments;
+    private final com.leash.vault.WalletService wallet;
 
-    public PayPalReturnController(LeashProperties props, PaymentService payments) {
+    public PayPalReturnController(LeashProperties props, PaymentService payments, com.leash.vault.WalletService wallet) {
         this.props = props;
         this.payments = payments;
+        this.wallet = wallet;
+    }
+
+    /**
+     * The owner approved saving PayPal (setup token return_url). Query parameters are ignored: Leash finishes with the
+     * setup token it stored itself, and PayPal only turns it into a payment token if the owner really approved it, so
+     * a forged visit can't save anything.
+     */
+    @GetMapping(value = "/vault/return", produces = MediaType.TEXT_HTML_VALUE)
+    public String vaultApproved() {
+        try {
+            var v = wallet.complete();
+            return page("PayPal saved", "Approved purchases will now be paid from "
+                    + (v.hint() == null ? "your PayPal" : v.hint()) + " with no popup. You can close this tab.");
+        } catch (RuntimeException e) {
+            log.warn("Finishing PayPal save failed: {}", e.getMessage());
+            return page("Not saved yet", "Leash couldn't finish saving PayPal. Go back to Leash and press \"I've approved it\".");
+        }
+    }
+
+    @GetMapping(value = "/vault/cancel", produces = MediaType.TEXT_HTML_VALUE)
+    public String vaultCancelled() {
+        wallet.cancel();
+        return page("Not saved", "Nothing was saved. Purchases will keep asking you to approve each payment.");
     }
 
     @GetMapping(value = "/return", produces = MediaType.TEXT_HTML_VALUE)

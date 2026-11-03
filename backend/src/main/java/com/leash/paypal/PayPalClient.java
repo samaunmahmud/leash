@@ -24,7 +24,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * Thin PayPal REST client for the sandbox: OAuth (cached), Orders v2 create/capture/get. T11 adds Vault, T15 adds
+ * Thin PayPal REST client for the sandbox: OAuth (cached), Orders v2 create/capture/get, Vault v3 (save the owner's
+ * wallet once, then pay with no popup). T15 adds
  * refunds and webhook verification.
  *
  * <p>Every field sent or read here was checked against PayPal's published OpenAPI specs (linked above each call).
@@ -145,6 +146,135 @@ public class PayPalClient {
         log.info("PayPal order {} captured: {} (capture {} {})", order.id(), order.status(), order.captureId(), order.captureStatus());
         return order;
     }
+
+    // ── Vault v3: save the owner's PayPal once, then pay with no popup ─────────────────────────────────────
+
+    /**
+     * Starts saving the owner's PayPal wallet without a purchase. The owner opens the returned approve link once.
+     *
+     * <p>Docs: https://developer.paypal.com/docs/checkout/save-payment-methods/purchase-later/payment-tokens-api/paypal/
+     * and https://developer.paypal.com/docs/api/payment-tokens/v3/#setup-tokens_create (POST /v3/vault/setup-tokens).
+     * Request: payment_source.paypal.{usage_type MERCHANT|PLATFORM, customer_type CONSUMER|BUSINESS,
+     * permit_multiple_payment_tokens, usage_pattern, experience_context.{brand_name, shipping_preference, return_url,
+     * cancel_url}} (fields checked against vault_payment_tokens_v3.json in paypal/paypal-rest-api-specifications).
+     * Response: id, status (CREATED, PAYER_ACTION_REQUIRED, APPROVED, VAULTED, TOKENIZED), links[] with rel "approve".
+     */
+    public SetupToken createSetupToken(String requestId) {
+        var experience = new LinkedHashMap<String, Object>();
+        experience.put("brand_name", "Leash");
+        experience.put("shipping_preference", "NO_SHIPPING");
+        experience.put("return_url", publicUrl + "/api/paypal/vault/return");
+        experience.put("cancel_url", publicUrl + "/api/paypal/vault/cancel");
+        var paypal = new LinkedHashMap<String, Object>();
+        paypal.put("usage_type", "MERCHANT");
+        paypal.put("customer_type", "CONSUMER");
+        paypal.put("permit_multiple_payment_tokens", false);
+        paypal.put("usage_pattern", "IMMEDIATE");
+        paypal.put("experience_context", experience);
+        Map<String, Object> res = call("create setup token", () -> http.post()
+                .uri("/v3/vault/setup-tokens")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken())
+                .header("PayPal-Request-Id", requestId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("payment_source", Map.of("paypal", paypal)))
+                .retrieve()
+                .body(MAP));
+        if (res == null || str(res.get("id")) == null) throw new PayPalException("Empty PayPal setup token response");
+        var token = new SetupToken(str(res.get("id")), str(res.get("status")), link(res, "approve"));
+        log.info("PayPal setup token {} created ({})", token.id(), token.status());
+        return token;
+    }
+
+    /**
+     * Turns the approved setup token into a payment token (the vault ID). Only the ID and a masked email hint leave
+     * this method: the email, payer ID and customer ID in the response are dropped here.
+     *
+     * <p>Docs: https://developer.paypal.com/docs/api/payment-tokens/v3/#payment-tokens_create
+     * (POST /v3/vault/payment-tokens). Request: payment_source.token.{id, type SETUP_TOKEN}.
+     * Response: id, customer.id, payment_source.paypal.{email_address, payer_id, ...}.
+     */
+    public PaymentToken createPaymentToken(String setupTokenId) {
+        Map<String, Object> res = call("create payment token", () -> http.post()
+                .uri("/v3/vault/payment-tokens")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken())
+                // Unique per attempt: a fixed key could make PayPal replay the "not approved yet" 422 after the owner
+                // approves. Double-saving is prevented by WalletService instead.
+                .header("PayPal-Request-Id", "vault-" + setupTokenId + "-" + java.util.UUID.randomUUID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("payment_source", Map.of("token", Map.of("id", setupTokenId, "type", "SETUP_TOKEN"))))
+                .retrieve()
+                .body(MAP));
+        if (res == null || str(res.get("id")) == null) throw new PayPalException("Empty PayPal payment token response");
+        String email = null;
+        if (res.get("payment_source") instanceof Map<?, ?> ps && ps.get("paypal") instanceof Map<?, ?> pp) {
+            email = str(pp.get("email_address"));
+        }
+        log.info("PayPal payment token {} saved", res.get("id"));
+        return new PaymentToken(str(res.get("id")), maskEmail(email));
+    }
+
+    /**
+     * Deletes a saved payment token, so "forget my PayPal" really forgets it at PayPal too.
+     *
+     * <p>Docs: https://developer.paypal.com/docs/api/payment-tokens/v3/#payment-tokens_delete
+     * (DELETE /v3/vault/payment-tokens/{id}, 204 No Content).
+     */
+    public void deletePaymentToken(String paymentTokenId) {
+        call("delete payment token", () -> http.delete()
+                .uri("/v3/vault/payment-tokens/{id}", paymentTokenId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken())
+                .retrieve()
+                .toBodilessEntity());
+        log.info("PayPal payment token {} deleted", paymentTokenId);
+    }
+
+    /**
+     * Pays an approved purchase with the saved wallet: no buyer redirect. Merchant-initiated (the agent buys while the
+     * owner is away), so stored_credential says so.
+     *
+     * <p>Docs: https://developer.paypal.com/docs/checkout/save-payment-methods/purchase-later/payment-tokens-api/paypal/
+     * ("Use payment token": POST /v2/checkout/orders with payment_source.paypal.vault_id; the sample response is
+     * status COMPLETED with purchase_units[].payments.captures[]) and
+     * https://developer.paypal.com/docs/api/orders/v2/#orders_create (payment_source.paypal.stored_credential.
+     * {payment_initiator CUSTOMER|MERCHANT (required), usage FIRST|SUBSEQUENT|DERIVED}).
+     * The PayPal-Request-Id is prefixed so it can never collide with an approve-link order for the same request.
+     */
+    public PayPalOrder createVaultOrder(String requestId, String vaultId, long amountMinor, String currency,
+                                        String description) {
+        var paypal = new LinkedHashMap<String, Object>();
+        paypal.put("vault_id", vaultId);
+        paypal.put("stored_credential", Map.of("payment_initiator", "MERCHANT", "usage", "SUBSEQUENT"));
+        Map<String, Object> req = Map.of(
+                "intent", "CAPTURE",
+                "purchase_units", List.of(purchaseUnit(requestId, amountMinor, currency, description)),
+                "payment_source", Map.of("paypal", paypal));
+        PayPalOrder order = postOrder("/v2/checkout/orders", "vault-" + requestId, req, "create vault order");
+        log.info("PayPal vault order {} for request {} ({}, capture {})", order.id(), requestId, order.status(), order.captureId());
+        return order;
+    }
+
+    /** "sam@personal.example.com" → "s•••@personal.example.com". Null stays null. */
+    static String maskEmail(String email) {
+        if (email == null || email.isBlank()) return null;
+        int at = email.indexOf('@');
+        if (at <= 0) return "•••";
+        return email.charAt(0) + "•••" + email.substring(at);
+    }
+
+    private static String link(Map<String, Object> res, String rel) {
+        if (res.get("links") instanceof List<?> links) {
+            for (Object o : links) {
+                if (o instanceof Map<?, ?> l && rel.equals(l.get("rel"))) return str(l.get("href"));
+            }
+        }
+        return null;
+    }
+
+    /** A setup token waiting for the owner. Carries no payer data. */
+    public record SetupToken(String id, String status, String approveUrl) {}
+
+    /** The saved wallet as Leash keeps it: PayPal's vault ID and a masked hint, nothing else. */
+    public record PaymentToken(String id, String hint) {}
 
     /** Docs: https://developer.paypal.com/docs/api/orders/v2/#orders_get */
     public PayPalOrder getOrder(String orderId) {

@@ -163,4 +163,11 @@ class PayPalClientTest {
         assertThatThrownBy(() -> c.createOrder("r", 500, "GBP", "x")).isInstanceOf(PayPalException.class);
         assertThat(fake.requests()).isEmpty();
     }
+
+    @org.junit.jupiter.api.Test
+    void masksTheSavedEmailToAHint() {
+        org.assertj.core.api.Assertions.assertThat(PayPalClient.maskEmail("sam@personal.example.com")).isEqualTo("s•••@personal.example.com");
+        org.assertj.core.api.Assertions.assertThat(PayPalClient.maskEmail("nobody")).isEqualTo("•••");
+        org.assertj.core.api.Assertions.assertThat(PayPalClient.maskEmail(null)).isNull();
+    }
 }
