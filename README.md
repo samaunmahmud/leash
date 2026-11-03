@@ -63,6 +63,8 @@ cd frontend && npm install && npm run dev
 
 Open http://localhost:5173. The API runs on http://localhost:8080 (`/api/health`).
 
+AI is optional. Without `LEASH_LLM_*` Leash uses its rule-based mandate reader and risk checks. To turn it on with Gemini, add an [AI Studio key](https://aistudio.google.com/apikey) and keep the Gemini settings from `.env.example` (`gemini-3.5-flash-lite`, `reasoning_effort=minimal`). Any OpenAI-compatible endpoint works the same way. The free tier allows about 20 requests per model per day, and each purchase or mandate reading uses one or two.
+
 No Docker? Remove the `LEASH_DB_*` lines from `.env` and the backend uses an in-memory database instead (it starts fresh on every restart).
 
 Tests:

@@ -154,4 +154,27 @@ class MandateParserTest {
             assertThat(VALIDATOR.validate(p.mandate())).as(text).isEmpty();
         }
     }
+
+    /** Regression: real Gemini 3.5 Flash reply (2026-11-03) sent "notes" as a string, which was rejected twice. */
+    @Test
+    void geminiStyleReplyWithNotesAsAStringIsAccepted() {
+        String gemini = """
+                {   "name": "Studio office supplies",   "agentName": "Office bot",   "kind": "office",   "currency": "GBP",
+                    "period": "MONTH",   "length": "300.00",   "autoApproveUpTo": "50.00",   "perPurchaseMax": "0.00",
+                    "allowedMerchants": [ "Viking", "Staples", "Amazon Business" ], "blockedMerchants": [],
+                    "allowedCategories": [ "office supplies" ], "blockedCategories": [ "electronics" ],
+                    "maxPurchasesPerHour": 0, "quietStart": null, "quietEnd": null,
+                    "notes": "Set category to office supplies based on the mandate title and description." }""";
+        var p = parser(gemini).parse("Office supplies for the studio, £300 a month from Viking, Staples or Amazon Business. Ask me over £50. No electronics.");
+        assertThat(p.source()).isEqualTo("ai");
+        assertThat(prompts).hasSize(1);
+        assertThat(p.mandate().periodLimitMinor()).isEqualTo(30_000);
+        assertThat(p.mandate().allowedMerchants()).containsExactly("Viking", "Staples", "Amazon Business");
+        assertThat(p.notes()).contains("Set category to office supplies based on the mandate title and description.");
+    }
+
+    @Test
+    void systemPromptSaysListsAreArrays() {
+        assertThat(MandateParser.SYSTEM).contains("JSON array of strings, even with one item");
+    }
 }

@@ -50,10 +50,16 @@ class OpenAiCompatibleTransportTest {
         if (server != null) server.stop(0);
     }
 
+    final java.util.List<OpenAiCompatibleTransport.CallStats> stats = new java.util.ArrayList<>();
+
     OpenAiCompatibleTransport transport(Duration read) {
+        return transport(read, null);
+    }
+
+    OpenAiCompatibleTransport transport(Duration read, String effort) {
         var cfg = new LeashProperties.Llm("http://localhost:" + server.getAddress().getPort() + "/v1/", "test-key",
-                "test-model", 10);
-        return new OpenAiCompatibleTransport(cfg, RestClient.builder(), Duration.ofSeconds(2), read);
+                "test-model", 10, effort);
+        return new OpenAiCompatibleTransport(cfg, RestClient.builder(), Duration.ofSeconds(2), read, stats::add);
     }
 
     @Test
@@ -84,5 +90,48 @@ class OpenAiCompatibleTransportTest {
         assertThatThrownBy(() -> transport(Duration.ofMillis(200)).chat("s", "u"))
                 .isInstanceOf(LlmException.class)
                 .hasMessageContaining("timed out");
+    }
+
+    static final String OK_WITH_USAGE = "{\"choices\":[{\"message\":{\"content\":\"{}\"}}],"
+            + "\"usage\":{\"prompt_tokens\":721,\"completion_tokens\":75,\"total_tokens\":796}}";
+
+    @Test
+    void reportsLatencyAndTokensPerCall() throws IOException {
+        start(200, OK_WITH_USAGE, 0);
+        transport(Duration.ofSeconds(5)).chat("s", "u");
+        assertThat(stats).hasSize(1);
+        var s = stats.getFirst();
+        assertThat(s.model()).isEqualTo("test-model");
+        assertThat(s.status()).isEqualTo(200);
+        assertThat(s.promptTokens()).isEqualTo(721);
+        assertThat(s.completionTokens()).isEqualTo(75);
+        assertThat(s.totalTokens()).isEqualTo(796);
+        assertThat(s.millis()).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    void reportsFailedCallsToo() throws IOException {
+        start(503, "[{\"error\":{\"code\":503,\"status\":\"UNAVAILABLE\"}}]", 0);
+        assertThatThrownBy(() -> transport(Duration.ofSeconds(5)).chat("s", "u")).isInstanceOf(LlmException.class);
+        assertThat(stats).singleElement().satisfies(s -> {
+            assertThat(s.status()).isEqualTo(503);
+            assertThat(s.totalTokens()).isNull();
+        });
+    }
+
+    @Test
+    void sendsReasoningEffortOnlyWhenConfigured() throws IOException {
+        start(200, OK_WITH_USAGE, 0);
+        transport(Duration.ofSeconds(5)).chat("s", "u");
+        assertThat(body.get().has("reasoning_effort")).isFalse();
+
+        transport(Duration.ofSeconds(5), "Minimal").chat("s", "u");
+        assertThat(body.get().get("reasoning_effort").asString()).isEqualTo("minimal");
+    }
+
+    @Test
+    void unknownReasoningEffortIsRefusedAtStartup() {
+        assertThatThrownBy(() -> new LeashProperties.Llm("http://x", "k", "m", 1, "turbo"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("LEASH_LLM_REASONING_EFFORT");
     }
 }

@@ -150,4 +150,25 @@ class StructuredLlmTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> OpenAiCompatibleTransport.content(java.util.Map.of()))
                 .isInstanceOf(LlmException.class);
     }
+
+    record Listy(@NotBlank String word, java.util.List<@NotBlank String> tags) {}
+
+    @Test
+    void aSingleValueIsReadAsAOneItemListAndStillValidated() {
+        var ok = llm(new Scripted("{\"word\":\"leash\",\"tags\":\"one\"}"), 100)
+                .ask("t", "s", "q", Listy.class, Function.identity());
+        assertThat(ok).contains(new Listy("leash", java.util.List.of("one")));
+
+        var t = new Scripted("{\"word\":\"leash\",\"tags\":\" \"}", "{\"word\":\"leash\",\"tags\":[\"x\"]}");
+        llm(t, 100).ask("t", "s", "q", Listy.class, Function.identity());
+        assertThat(t.prompts.get(1)).contains("tags[0]", "must not be blank");
+    }
+
+    /** Regression: the retry used to say only "wasn't valid JSON", so the model repeated the same mistake. */
+    @Test
+    void wrongTypeRetryNamesTheFieldWithoutEchoingTheReply() {
+        var t = new Scripted("{\"word\":\"leash\",\"n\":\"secret-ish text\"}", "{\"word\":\"leash\",\"n\":1}");
+        assertThat(ask(llm(t, 100))).contains(new Answer("leash", 1));
+        assertThat(t.prompts.get(1)).contains("the field \"n\" has the wrong type").doesNotContain("secret-ish");
+    }
 }

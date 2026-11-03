@@ -26,6 +26,7 @@ leash:
     api-key: ${LEASH_LLM_API_KEY:}
     model: ${LEASH_LLM_MODEL:}
     max-calls-per-day: ${LEASH_LLM_MAX_CALLS_PER_DAY:500}
+    reasoning-effort: ${LEASH_LLM_REASONING_EFFORT:}
   cors-origins: ${LEASH_CORS_ORIGINS:http://localhost:5173}
   public-url: ${LEASH_PUBLIC_URL:http://localhost:8080}
   app-url: ${LEASH_APP_URL:http://localhost:5173}

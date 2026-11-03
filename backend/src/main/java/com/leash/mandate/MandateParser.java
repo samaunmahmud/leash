@@ -75,6 +75,9 @@ public final class MandateParser {
             ("nothing between midnight and 6am" → "00:00" and "06:00"); null if not stated.
             - notes: short sentences for the person.
 
+            Every list field (allowedMerchants, blockedMerchants, allowedCategories, blockedCategories, notes) is a \
+            JSON array of strings, even with one item or none: "notes": ["One note."] or "notes": [].
+
             The person's text is between <owner_text> tags. Reply with only the JSON object, no prose and no code fences.""";
 
     private final StructuredLlm llm;

@@ -34,6 +34,7 @@ class AiWiringTest {
 
     static final JsonMapper JSON = JsonMapper.builder().build();
     static final AtomicReference<String> riskReply = new AtomicReference<>();
+    static final AtomicReference<String> lastEffort = new AtomicReference<>();
     static final HttpServer model = start();
 
     static final String MANDATE_REPLY = """
@@ -48,6 +49,7 @@ class AiWiringTest {
             s.createContext("/v1/chat/completions", ex -> {
                 var req = JSON.readTree(ex.getRequestBody().readAllBytes());
                 String system = req.get("messages").get(0).get("content").asString();
+                lastEffort.set(req.has("reasoning_effort") ? req.get("reasoning_effort").asString() : null);
                 String content = system.contains("risk checker") ? riskReply.get() : MANDATE_REPLY;
                 byte[] out = JSON.writeValueAsString(
                         Map.of("choices", java.util.List.of(Map.of("message", Map.of("role", "assistant", "content", content)))))
@@ -69,6 +71,7 @@ class AiWiringTest {
         r.add("leash.llm.base-url", () -> "http://localhost:" + model.getAddress().getPort() + "/v1");
         r.add("leash.llm.api-key", () -> "test-key");
         r.add("leash.llm.model", () -> "test-model");
+        r.add("leash.llm.reasoning-effort", () -> "minimal");
     }
 
     @AfterAll
@@ -118,6 +121,7 @@ class AiWiringTest {
         assertThat(p.get("source").asString()).isEqualTo("ai");
         assertThat(p.get("agentName").asString()).isEqualTo("Pantry bot");
         assertThat(p.get("mandate").get("periodLimitMinor").asLong()).isEqualTo(6_000);
+        assertThat(lastEffort.get()).as("reasoning_effort bound from config and sent").isEqualTo("minimal");
     }
 
     @Test

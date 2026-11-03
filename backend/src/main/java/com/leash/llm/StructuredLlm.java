@@ -33,6 +33,9 @@ public final class StructuredLlm {
     private static final JsonMapper JSON = JsonMapper.builder()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            // Models sometimes send "notes": "one note" for a list. Reading it as a one-item list loses nothing:
+            // the value is still validated like any other.
+            .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .build();
 
     private final LlmTransport transport;
@@ -73,15 +76,30 @@ public final class StructuredLlm {
                 if (!violations.isEmpty()) throw new IllegalArgumentException(describe(violations));
                 return Optional.of(convert.apply(value));
             } catch (JacksonException e) {
-                problem = "it wasn't a single valid JSON object matching the schema";
+                problem = jsonProblem(e);
             } catch (IllegalArgumentException e) {
                 problem = e.getMessage();
             }
-            log.warn("LLM {}: attempt {} rejected ({})", purpose, attempt, attempt == 1 ? "retrying" : "giving up");
+            // The problem names fields and constraints only (or a generic JSON error), never the reply's content.
+            log.warn("LLM {}: attempt {} rejected because {} ({})", purpose, attempt, problem,
+                    attempt == 1 ? "retrying" : "giving up");
             prompt = user + "\n\nYour previous reply was rejected because " + problem
                     + ". Reply again with only the corrected JSON object.";
         }
         return Optional.empty();
+    }
+
+    /**
+     * Tells the model which field was wrong so the retry can fix it, without echoing any of the reply (Jackson's own
+     * message quotes the offending value).
+     */
+    static String jsonProblem(JacksonException e) {
+        String field = e.getPath().stream()
+                .map(r -> r.getPropertyName() != null ? r.getPropertyName() : "[" + r.getIndex() + "]")
+                .collect(Collectors.joining(".")).replace(".[", "[");
+        return field.isEmpty()
+                ? "it wasn't a single valid JSON object matching the schema"
+                : "the field \"" + field + "\" has the wrong type or format for the schema";
     }
 
     /** Some models wrap JSON in ```json fences even when asked not to. */

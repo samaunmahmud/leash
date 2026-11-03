@@ -55,9 +55,29 @@ public record LeashProperties(PayPal paypal, Llm llm, String corsOrigins, String
     }
 
     /**
-     * @param maxCallsPerDay spend guard: after this many LLM calls in a day Leash stops calling and uses heuristics
+     * @param maxCallsPerDay  spend guard: after this many LLM calls in a day Leash stops calling and uses heuristics
+     * @param reasoningEffort optional OpenAI-style reasoning_effort (none, minimal, low, medium, high), sent only when
+     *                        set. Thinking models (Gemini 3, OpenAI o-series) otherwise think long enough to blow the
+     *                        12 s timeout; some non-reasoning models reject the parameter, hence opt-in.
      */
-    public record Llm(String baseUrl, String apiKey, String model, int maxCallsPerDay) {
+    public record Llm(String baseUrl, String apiKey, String model, int maxCallsPerDay, String reasoningEffort) {
+        public static final java.util.Set<String> EFFORTS = java.util.Set.of("none", "minimal", "low", "medium", "high");
+
+        /** Spring binds through this one. Without the annotation the second constructor makes binding ambiguous and
+         * Spring silently leaves the AI unconfigured (caught by AiWiringTest). */
+        @org.springframework.boot.context.properties.bind.ConstructorBinding
+        public Llm {
+            reasoningEffort = reasoningEffort == null || reasoningEffort.isBlank() ? null
+                    : reasoningEffort.strip().toLowerCase(Locale.ROOT);
+            if (reasoningEffort != null && !EFFORTS.contains(reasoningEffort)) {
+                throw new IllegalArgumentException("LEASH_LLM_REASONING_EFFORT must be one of " + EFFORTS);
+            }
+        }
+
+        public Llm(String baseUrl, String apiKey, String model, int maxCallsPerDay) {
+            this(baseUrl, apiKey, model, maxCallsPerDay, null);
+        }
+
         public boolean configured() {
             return notBlank(baseUrl) && notBlank(apiKey) && notBlank(model);
         }
