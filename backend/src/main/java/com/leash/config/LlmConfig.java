@@ -21,7 +21,7 @@ public class LlmConfig {
     StructuredLlm structuredLlm(LeashProperties props, Clock clock, Validator validator) {
         var cfg = props.llm();
         var transport = cfg.configured() ? new OpenAiCompatibleTransport(cfg) : null;
-        return new StructuredLlm(transport, new LlmBudget(cfg.maxCallsPerDay(), clock), validator);
+        return new StructuredLlm(transport, new LlmBudget(cfg.maxCallsPerDay(), clock), validator, clock);
     }
 
     @Bean

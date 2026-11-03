@@ -5,7 +5,6 @@ import com.leash.policy.PolicyEngine;
 import com.leash.policy.Reason;
 import com.leash.policy.RuleCode;
 import com.leash.policy.Money;
-import com.leash.risk.HeuristicRiskChecker;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZoneId;
@@ -18,7 +17,7 @@ class DemoScenarioTest {
 
     @Test
     void scenarioPlaysApproveTugBlock() {
-        var entries = new DemoScenario(new PolicyEngine(ZoneId.of("Europe/London")), new HeuristicRiskChecker()).run();
+        var entries = new DemoScenario(new PolicyEngine(ZoneId.of("Europe/London"))).run();
         assertThat(entries).extracting(e -> e.decision().outcome())
                 .containsExactly(Outcome.APPROVE, Outcome.TUG, Outcome.BLOCK);
 

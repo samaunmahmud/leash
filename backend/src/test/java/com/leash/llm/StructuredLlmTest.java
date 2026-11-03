@@ -171,4 +171,40 @@ class StructuredLlmTest {
         assertThat(ask(llm(t, 100))).contains(new Answer("leash", 1));
         assertThat(t.prompts.get(1)).contains("the field \"n\" has the wrong type").doesNotContain("secret-ish");
     }
+
+    /** Regression (live, 2026-11-03): with Gemini stalling, every demo step waited the full 12 s timeout. */
+    @Test
+    void afterAFailureTheModelIsSkippedForTheCoolOffThenTriedAgain() {
+        var now = new Instant[]{Instant.parse("2026-11-09T12:00:00Z")};
+        Clock moving = new Clock() {
+            public java.time.ZoneId getZone() { return ZoneOffset.UTC; }
+            public Clock withZone(java.time.ZoneId z) { return this; }
+            public Instant instant() { return now[0]; }
+        };
+        var calls = new int[1];
+        var down = new boolean[]{true};
+        LlmTransport flaky = (sys, u) -> {
+            calls[0]++;
+            if (down[0]) throw new LlmException("model endpoint unreachable or timed out");
+            return "{\"word\":\"back\",\"n\":1}";
+        };
+        var llm = new StructuredLlm(flaky, new LlmBudget(100, moving), VALIDATOR, moving);
+
+        assertThat(ask(llm)).isEmpty();
+        assertThat(ask(llm)).isEmpty();
+        assertThat(calls[0]).as("second ask skipped the model").isEqualTo(1);
+
+        down[0] = false;
+        now[0] = now[0].plus(StructuredLlm.COOL_OFF).plusSeconds(1);
+        assertThat(ask(llm)).contains(new Answer("back", 1));
+        assertThat(calls[0]).isEqualTo(2);
+    }
+
+    @Test
+    void aBadReplyIsNotAnOutageAndDoesNotTripTheBreaker() {
+        var t = new Scripted("nope", "nope", "{\"word\":\"ok\",\"n\":1}");
+        var llm = llm(t, 100);
+        assertThat(ask(llm)).isEmpty();
+        assertThat(ask(llm)).contains(new Answer("ok", 1));
+    }
 }

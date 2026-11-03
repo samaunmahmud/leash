@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
  *   <li>Bean Validation on the result, then {@code convert} (which may reject it with an IllegalArgumentException)</li>
  *   <li>anything wrong → one retry that tells the model what was wrong</li>
  *   <li>still wrong, or the model is unreachable → {@link Optional#empty()}, and the caller falls back to heuristics</li>
+ *   <li>circuit breaker: after the model is unreachable, errors or times out, skip it for {@link #COOL_OFF} so every
+ *       following purchase doesn't wait out the timeout too (seen live: Gemini stalled and a 3-step demo took 36 s)</li>
  * </ol>
  * Never throws for model trouble. Never logs prompts, replies or keys: only which step failed.
  */
@@ -38,15 +40,24 @@ public final class StructuredLlm {
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .build();
 
+    public static final java.time.Duration COOL_OFF = java.time.Duration.ofSeconds(60);
+
     private final LlmTransport transport;
     private final LlmBudget budget;
     private final Validator validator;
+    private final java.time.Clock clock;
+    private volatile java.time.Instant skipUntil = java.time.Instant.EPOCH;
 
     /** @param transport null when no model is configured: every ask then returns empty without trying */
     public StructuredLlm(LlmTransport transport, LlmBudget budget, Validator validator) {
+        this(transport, budget, validator, java.time.Clock.systemUTC());
+    }
+
+    public StructuredLlm(LlmTransport transport, LlmBudget budget, Validator validator, java.time.Clock clock) {
         this.transport = transport;
         this.budget = budget;
         this.validator = validator;
+        this.clock = clock;
     }
 
     public boolean enabled() {
@@ -55,6 +66,10 @@ public final class StructuredLlm {
 
     public <T, R> Optional<R> ask(String purpose, String system, String user, Class<T> type, Function<T, R> convert) {
         if (!enabled()) return Optional.empty();
+        if (clock.instant().isBefore(skipUntil)) {
+            log.debug("LLM {}: skipped, model failed recently", purpose);
+            return Optional.empty();
+        }
         String prompt = user;
         for (int attempt = 1; attempt <= 2; attempt++) {
             if (!budget.tryAcquire()) {
@@ -65,7 +80,8 @@ public final class StructuredLlm {
             try {
                 reply = transport.chat(system, prompt);
             } catch (RuntimeException e) { // LlmException, or anything a transport throws
-                log.warn("LLM {}: {}", purpose, e.getMessage());
+                skipUntil = clock.instant().plus(COOL_OFF);
+                log.warn("LLM {}: {} (using heuristics only for the next {}s)", purpose, e.getMessage(), COOL_OFF.toSeconds());
                 return Optional.empty(); // unreachable or erroring: retrying now rarely helps and delays the purchase
             }
             String problem;

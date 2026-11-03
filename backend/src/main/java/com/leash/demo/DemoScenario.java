@@ -15,8 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The video's grocery scenario, run through the real engine and risk checker so the dashboard shows real decisions
- * from day one. T09 replaces the hard-coded requests with the demo agent shopping at Larder.
+ * The video's grocery scenario, run through the real engine and the rule-based risk checks, for the landing page's
+ * ledger preview. Deliberately no AI: the preview is computed on every page view, and calling the model there spent the
+ * whole free-tier daily quota during one round of UI checks (2026-11-03). The real AI check runs on real purchases
+ * (the demo agent, MCP and REST).
  */
 @Component
 public class DemoScenario {
@@ -28,11 +30,10 @@ public class DemoScenario {
             """;
 
     private final PolicyEngine engine;
-    private final RiskChecker risk;
+    private final RiskChecker risk = new com.leash.risk.HeuristicRiskChecker();
 
-    public DemoScenario(PolicyEngine engine, RiskChecker risk) {
+    public DemoScenario(PolicyEngine engine) {
         this.engine = engine;
-        this.risk = risk;
     }
 
     public static Mandate groceryLeash() {

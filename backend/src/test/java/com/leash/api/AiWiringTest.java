@@ -35,6 +35,7 @@ class AiWiringTest {
     static final JsonMapper JSON = JsonMapper.builder().build();
     static final AtomicReference<String> riskReply = new AtomicReference<>();
     static final AtomicReference<String> lastEffort = new AtomicReference<>();
+    static final java.util.concurrent.atomic.AtomicInteger modelCalls = new java.util.concurrent.atomic.AtomicInteger();
     static final HttpServer model = start();
 
     static final String MANDATE_REPLY = """
@@ -47,6 +48,7 @@ class AiWiringTest {
         try {
             HttpServer s = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
             s.createContext("/v1/chat/completions", ex -> {
+                modelCalls.incrementAndGet();
                 var req = JSON.readTree(ex.getRequestBody().readAllBytes());
                 String system = req.get("messages").get(0).get("content").asString();
                 lastEffort.set(req.has("reasoning_effort") ? req.get("reasoning_effort").asString() : null);
@@ -148,5 +150,14 @@ class AiWiringTest {
         var res = http.post("/api/purchases", milk(1_840));
         assertThat(res.status()).isEqualTo(201);
         assertThat(res.body()).contains("\"outcome\":\"APPROVE\"");
+    }
+
+    /** Regression: the landing preview ran the AI on every page view and used up the free-tier quota in minutes. */
+    @Test
+    void theLandingPreviewNeverCallsTheModel() {
+        int before = modelCalls.get();
+        for (int i = 0; i < 3; i++) assertThat(http.get("/api/demo/ledger").status()).isEqualTo(200);
+        assertThat(http.get("/api/demo/ledger").body()).contains("PROMPT_INJECTION");
+        assertThat(modelCalls.get()).isEqualTo(before);
     }
 }
