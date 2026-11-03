@@ -130,7 +130,7 @@ The REST endpoint `POST /api/purchases` takes the same `Authorization: Bearer` k
 
 - **Backend:** Java 21, Spring Boot 4. A pure policy engine (no framework code) with unit tests, and a PayPal REST client (OAuth, Orders v2). Postgres with Flyway migrations, plain JDBC.
 - **AI:** any OpenAI-compatible model for the mandate parser and the risk checker. Structured JSON output, validated, with a heuristic fallback.
-- **Frontend:** React 18, TypeScript, Vite.
+- **Frontend:** React 18, TypeScript, Vite. The ledger is AG Grid Community, themed with Leash's own colour tokens in both light and dark, with live rows over Server-Sent Events, quick search, outcome and agent filters, and a pinned total row.
 - **PayPal:** Orders v2 (create and capture) and Vault v3. Save your PayPal once (setup token → payment token) and approved purchases are charged to the saved token with no popup, as merchant-initiated orders. Leash stores only PayPal's token ID and a masked email hint. Without a saved wallet, or if PayPal refuses the saved one, each purchase gets an approve link instead. Webhooks are planned.
 
 ## License

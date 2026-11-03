@@ -98,6 +98,69 @@
 .notice + .tug-list, .notice + .empty { margin-top: 12px; }
 
 /* ── Ledger ──────────────────────────────────────────── */
+/* AG Grid ledger: the theme takes its colours from tokens (LedgerGrid.tsx); this is layout and cell content only. */
+.ledger-card { overflow: visible; }
+.ledger-tools { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.ledger-search { flex: 1 1 220px; min-width: 0; }
+.ledger-search input, .ledger-agent select {
+  width: 100%; height: 36px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid var(--line-2);
+  background: var(--panel); color: var(--text); font: 500 13.5px var(--font);
+}
+.ledger-search input:focus, .ledger-agent select:focus { outline: none; border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ledger-agent { flex: 0 1 180px; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); }
+.seg-btn { height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: none; color: var(--text-2); font: 600 12.5px var(--font); cursor: pointer; }
+.seg-btn:hover { color: var(--text); }
+.seg-btn.is-on { background: var(--panel); color: var(--tone, var(--text)); box-shadow: var(--shadow); }
+.ledger-grid { min-width: 0; }
+.ledger-grid .ag-root-wrapper { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+.ledger-grid .ag-row:not(.ag-row-pinned) { cursor: pointer; }
+.ledger-grid .ag-cell { display: flex; align-items: center; }
+.ledger-grid .ag-right-aligned-cell { justify-content: flex-end; }
+.ag-agent { display: inline-flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ag-item { display: grid; line-height: 1.3; min-width: 0; }
+.ag-item-main { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ag-item .xs { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ag-amount { font-weight: 650; }
+.ledger-grid .ag-cell .status-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; line-height: 1; align-self: center; }
+/* Phones: a taller fixed row and the item clamped to two lines (auto-height rows overlapped). */
+@media (max-width: 640px) {
+  .ledger-grid .ag-item { line-height: 1.3; }
+  .ledger-grid .ag-item-main { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}
+.ag-total { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; font-size: 13px; line-height: 1.35; }
+.tone-pos { color: var(--pos); }
+.tone-warn { color: var(--warn); }
+.tone-neg { color: var(--neg); }
+.ai-tag { margin-left: 6px; padding: 0 5px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-soft); }
+.ledger-grid .ag-row.is-new { animation: arrive 2.4s ease-out; }
+
+/* ── Reason drawer ───────────────────────────────────── */
+body.has-drawer { overflow: hidden; }
+.drawer-wrap { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; }
+.drawer-backdrop { position: absolute; inset: 0; border: 0; padding: 0; background: color-mix(in srgb, #000 42%, transparent); cursor: default; animation: fade 0.18s ease-out; }
+.drawer { position: relative; width: min(520px, 100%); height: 100%; display: flex; flex-direction: column; background: var(--bg); border-left: 1px solid var(--line); box-shadow: var(--shadow-lg); animation: slide-in 0.22s ease-out; }
+.drawer::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--tone); }
+.drawer-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 20px 22px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.drawer-title { display: grid; gap: 6px; min-width: 0; }
+.drawer-title h2 { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; }
+.drawer-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; color: var(--text-2); font-size: 14px; }
+.drawer-amount { font-size: 17px; font-weight: 700; color: var(--text); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 18px 22px 28px; display: grid; gap: 16px; align-content: start; }
+@keyframes slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 640px) {
+  .drawer-wrap { align-items: flex-end; }
+  .drawer { width: 100%; height: auto; max-height: 92vh; border-left: 0; border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; animation-name: rise; }
+  .drawer::before { left: 0; right: 0; bottom: auto; width: auto; height: 3px; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  .drawer-head, .drawer-body { padding-left: 16px; padding-right: 16px; }
+  .ledger-tools { padding: 12px; }
+  .seg { width: 100%; }
+  .seg-btn { flex: 1; padding: 0 6px; }
+  .ledger-agent { flex: 1 1 100%; }
+}
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
 .status-tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 550; color: var(--tone, var(--text-3)); background: color-mix(in srgb, var(--tone, var(--text-4)) 9%, transparent); white-space: nowrap; }
 .ledger-row.is-new td { animation: arrive 2.4s ease-out; }
 @keyframes arrive { from { background: var(--accent-soft); } to { background: transparent; } }

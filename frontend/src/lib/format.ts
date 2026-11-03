@@ -11,7 +11,7 @@ export function money(minor: number, currency: string): string {
 
 /** What each outcome is called on screen. Same words everywhere: UI, ledger, video. */
 export const OUTCOME_LABEL: Record<Outcome, string> = {
-  APPROVE: "Paid",
+  APPROVE: "Approved",
   TUG: "Tugged",
   BLOCK: "Blocked",
 };

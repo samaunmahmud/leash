@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { Tab } from "../../hooks/useRoute";
 import { tabHref } from "../../hooks/useRoute";
 import { useLeashData } from "../../hooks/useLeashData";
 import { resetDemo, runDemo } from "../../api";
 import { LeashCards } from "./LeashCards";
 import { TugList } from "./TugList";
-import { LedgerGrid } from "./LedgerGrid";
+// AG Grid is the biggest dependency by far: load it only when the ledger tab opens.
+const LedgerGrid = lazy(() => import("./LedgerGrid").then((m) => ({ default: m.LedgerGrid })));
 import { NewLeash } from "./NewLeash";
 import { WalletCard } from "./WalletCard";
 
@@ -67,7 +68,9 @@ export function Dashboard({ tab }: { tab: Tab }) {
         ) : tab === "tugs" ? (
           <TugList tugs={data.tugs} leashes={data.leashes} onChanged={data.refresh} />
         ) : tab === "ledger" ? (
-          <LedgerGrid ledger={data.ledger} leashes={data.leashes} latestId={data.latestId} onChanged={data.refresh} />
+          <Suspense fallback={<p className="empty">Loading the ledger…</p>}>
+            <LedgerGrid ledger={data.ledger} leashes={data.leashes} latestId={data.latestId} onChanged={data.refresh} />
+          </Suspense>
         ) : (
           <NewLeash onCreated={data.refresh} />
         )}
