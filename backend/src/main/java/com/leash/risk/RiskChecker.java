@@ -8,7 +8,7 @@ import java.util.List;
  * A second opinion on a purchase. Implementations return extra reasons; Decision.escalate adds them, which can
  * only make the outcome stricter. A risk checker can never approve anything.
  *
- * <p>Implementations: {@link HeuristicRiskChecker} (no AI, always on) and LlmRiskChecker (T06), combined by
+ * <p>Implementations: {@link HeuristicRiskChecker} (no AI, always on) and {@link LlmRiskChecker} (when a model is configured), combined by
  * {@link CompositeRiskChecker}.
  */
 public interface RiskChecker {

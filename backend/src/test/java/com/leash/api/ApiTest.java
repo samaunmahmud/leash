@@ -54,6 +54,27 @@ class ApiTest {
     }
 
     @Test
+    void mandateParseWithNoModelGivesTheRuleBasedReading() throws Exception {
+        var body = "{\"text\":\"Groceries, £60 a week, supermarkets only, ask me over £25. Never gift cards.\"}";
+        var req = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/mandates/parse"))
+                .header("Content-Type", "application/json; charset=utf-8")
+                .POST(HttpRequest.BodyPublishers.ofString(body)).build();
+        var res = http.send(req, HttpResponse.BodyHandlers.ofString());
+        assertThat(res.statusCode()).isEqualTo(200);
+        assertThat(res.body()).contains("\"source\":\"heuristic\"", "\"periodLimitMinor\":6000",
+                "\"autoApproveUpToMinor\":2500", "\"kind\":\"grocery\"");
+    }
+
+    @Test
+    void mandateParseRefusesBlankText() throws Exception {
+        var req = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/mandates/parse"))
+                .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString("{\"text\":\" \"}")).build();
+        var res = http.send(req, HttpResponse.BodyHandlers.ofString());
+        assertThat(res.statusCode()).isEqualTo(400);
+        assertThat(res.body()).contains("text");
+    }
+
+    @Test
     void demoLedgerShowsApproveTugBlock() throws Exception {
         var res = get("/api/demo/ledger");
         assertThat(res.statusCode()).isEqualTo(200);
