@@ -100,6 +100,12 @@ class PurchaseFlowTest {
     }
 
     @Test
+    void webhookWithoutAWebhookIdIsNotConfigured() {
+        assertThat(http.post("/api/paypal/webhook", "{\"id\":\"WH-1\"}").status()).isEqualTo(503);
+        assertThat(fake.count("POST", "/v1/notifications")).isZero();
+    }
+
+    @Test
     void paypalReturnRedirectCapturesTheMatchingEntry() {
         var j = buy(grocery(1_840)).json();
         var page = http.get("/api/paypal/return?token=" + j.get("paypalOrderId").asString() + "&PayerID=X");

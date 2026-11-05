@@ -48,6 +48,11 @@ public final class FakePayPalServer implements AutoCloseable {
     public volatile Boolean setupApproval = null;
     /** When set, the next vault order fails with this HTTP status (then resets). */
     public volatile int failNextVaultOrderWith = 0;
+    /** Status the next new refund gets (COMPLETED, PENDING, FAILED, CANCELLED). */
+    public volatile String refundStatus = "COMPLETED";
+    /** When set, the next refund call fails with this HTTP status (then resets). */
+    public volatile int failNextRefundWith = 0;
+    private final Map<String, Map<String, Object>> refundsByRequestId = new ConcurrentHashMap<>();
 
     public FakePayPalServer() {
         try {
@@ -98,6 +103,9 @@ public final class FakePayPalServer implements AutoCloseable {
         tokenExpiresIn = 32_400;
         setupApproval = null;
         failNextVaultOrderWith = 0;
+        refundStatus = "COMPLETED";
+        failNextRefundWith = 0;
+        refundsByRequestId.clear();
     }
 
     @Override
@@ -142,7 +150,7 @@ public final class FakePayPalServer implements AutoCloseable {
                 if (o == null) notFound(ex);
                 else send(ex, 200, o);
             } else if (method.equals("POST") && path.matches("/v2/payments/captures/[^/]+/refund")) {
-                send(ex, 201, Map.of("id", "REF-" + seq.incrementAndGet(), "status", "COMPLETED"));
+                refund(ex, path.split("/")[4], headers.get("paypal-request-id"));
             } else if (method.equals("POST") && path.equals("/v3/vault/setup-tokens")) {
                 String id = "SETUP-" + seq.incrementAndGet();
                 send(ex, 201, Map.of("id", id, "status", "PAYER_ACTION_REQUIRED", "links", List.of(
@@ -240,6 +248,27 @@ public final class FakePayPalServer implements AutoCloseable {
         // Real responses include payer details; include some so tests can prove Leash never stores them.
         o.put("payer", Map.of("email_address", "buyer@example.com", "payer_id", "PAYERID123"));
         send(ex, 201, o);
+    }
+
+    /** Shape from payments_payment_v2.json: id, status, links[] with rel "up" = the capture. Same request ID → same refund. */
+    private void refund(HttpExchange ex, String captureId, String requestId) throws IOException {
+        if (failNextRefundWith != 0) {
+            int status = failNextRefundWith;
+            failNextRefundWith = 0;
+            send(ex, status, Map.of("name", "UNPROCESSABLE_ENTITY", "debug_id", "dbgref",
+                    "details", List.of(Map.of("issue", "CAPTURE_FULLY_REFUNDED"))));
+            return;
+        }
+        if (requestId != null && refundsByRequestId.containsKey(requestId)) {
+            send(ex, 200, refundsByRequestId.get(requestId));
+            return;
+        }
+        String id = "REF-" + seq.incrementAndGet();
+        Map<String, Object> r = Map.of("id", id, "status", refundStatus, "links", List.of(
+                Map.of("href", baseUrl() + "/v2/payments/refunds/" + id, "rel", "self", "method", "GET"),
+                Map.of("href", baseUrl() + "/v2/payments/captures/" + captureId, "rel", "up", "method", "GET")));
+        if (requestId != null) refundsByRequestId.put(requestId, r);
+        send(ex, 201, r);
     }
 
     private static Map<String, Object> withCapture(Map<String, Object> unit, String captureId) {

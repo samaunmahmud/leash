@@ -74,6 +74,14 @@ public class LedgerService {
         return saved;
     }
 
+    /** Conditional update (see {@link LedgerRepository#updateIfStatus}); announces only when it applied. */
+    public java.util.Optional<LedgerEntry> updateIf(LedgerEntry e, EntryStatus expected) {
+        if (!repo.updateIfStatus(e, expected)) return java.util.Optional.empty();
+        LedgerEntry saved = get(e.id());
+        events.publishEvent(new LedgerEvent(LedgerEvent.UPDATED, saved));
+        return java.util.Optional.of(saved);
+    }
+
     public Instant now() {
         return clock.instant();
     }

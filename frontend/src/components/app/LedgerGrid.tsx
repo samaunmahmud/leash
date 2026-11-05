@@ -19,7 +19,7 @@ import {
   type RowClassRules,
 } from "ag-grid-community";
 import type { Agent, LeashCard, LedgerEntry, Outcome } from "../../types";
-import { captureEntry } from "../../api";
+import { captureEntry, refundEntry } from "../../api";
 import { money } from "../../lib/format";
 import { dateTimeUk, STATUS_LABEL } from "../../lib/status";
 import { agentFromHash, ledgerTotals, matchesSearch, riskLevel, searchText } from "../../lib/ledgerView";
@@ -280,26 +280,57 @@ export function RiskTag({ entry }: { entry: LedgerEntry }) {
   );
 }
 
-/** What the human can still do with an entry: confirm in PayPal, or capture once confirmed. */
+/**
+ * What the human can still do with an entry: confirm in PayPal and capture once confirmed, or, once paid, regret it
+ * (full refund through PayPal). Regret asks once more first, because it moves money.
+ */
 export function EntryActions({ entry, onChanged }: { entry: LedgerEntry; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (entry.status !== "AWAITING_PAYER") return null;
-  const capture = () => {
+  const [confirming, setConfirming] = useState(false);
+  const run = (call: (id: string) => Promise<LedgerEntry>) => {
     setBusy(true);
     setError(null);
-    captureEntry(idOf(entry))
-      .then(onChanged)
+    call(idOf(entry))
+      .then(() => {
+        setConfirming(false);
+        onChanged();
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setBusy(false));
   };
-  return (
-    <div className="entry-actions">
-      {entry.approveUrl && (
-        <a className="btn btn-pp" href={entry.approveUrl} target="_blank" rel="noreferrer">Confirm in PayPal sandbox</a>
-      )}
-      <button type="button" className="btn" disabled={busy} onClick={capture}>I've confirmed: capture</button>
-      {error && <p className="form-error" role="alert">{error}</p>}
-    </div>
-  );
+
+  if (entry.status === "AWAITING_PAYER") {
+    return (
+      <div className="entry-actions">
+        {entry.approveUrl && (
+          <a className="btn btn-pp" href={entry.approveUrl} target="_blank" rel="noreferrer">Confirm in PayPal sandbox</a>
+        )}
+        <button type="button" className="btn" disabled={busy} onClick={() => run(captureEntry)}>I've confirmed: capture</button>
+        {error && <p className="form-error" role="alert">{error}</p>}
+      </div>
+    );
+  }
+
+  if (entry.status === "PAID" && entry.paypalCaptureId && !entry.paypalRefundId) {
+    const amount = money(entry.request.amountMinor, entry.request.currency);
+    return (
+      <div className="entry-actions">
+        {confirming ? (
+          <>
+            <span className="entry-actions-ask">Refund {amount} in full to your PayPal?</span>
+            <button type="button" className="btn" disabled={busy} onClick={() => run(refundEntry)}>
+              {busy ? "Refunding…" : `Yes, refund ${amount}`}
+            </button>
+            <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setConfirming(false)}>Keep it</button>
+          </>
+        ) : (
+          <button type="button" className="btn" onClick={() => setConfirming(true)}>Regret: refund</button>
+        )}
+        {error && <p className="form-error" role="alert">{error}</p>}
+      </div>
+    );
+  }
+
+  return null;
 }

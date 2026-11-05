@@ -276,6 +276,93 @@ public class PayPalClient {
     /** The saved wallet as Leash keeps it: PayPal's vault ID and a masked hint, nothing else. */
     public record PaymentToken(String id, String hint) {}
 
+    // ── Refunds ("regret") ──────────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Refunds a capture in full. The empty body means "refund everything"; the PayPal-Request-Id is fixed per ledger
+     * entry, so a double click or a retry returns the same refund instead of refunding twice.
+     *
+     * <p>Docs: https://developer.paypal.com/docs/api/payments/v2/#captures_refund
+     * (POST /v2/payments/captures/{capture_id}/refund; checked against payments_payment_v2.json in
+     * paypal/paypal-rest-api-specifications). Request body optional (amount, invoice_id, note_to_payer, ...); empty =
+     * full refund. Response 201/200: id, status (CANCELLED, FAILED, PENDING, COMPLETED), links[] (rel "up" = the capture).
+     */
+    public Refund refundCapture(String captureId, String requestId) {
+        Map<String, Object> res = call("refund capture", () -> http.post()
+                .uri("/v2/payments/captures/{id}/refund", captureId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken())
+                .header("PayPal-Request-Id", requestId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of())
+                .retrieve()
+                .body(MAP));
+        if (res == null || str(res.get("id")) == null) throw new PayPalException("Empty PayPal refund response");
+        var refund = new Refund(str(res.get("id")), str(res.get("status")));
+        log.info("PayPal refund {} for capture {}: {}", refund.id(), captureId, refund.status());
+        return refund;
+    }
+
+    /** A refund as Leash keeps it: ID and status only. */
+    public record Refund(String id, String status) {
+        public boolean completed() {
+            return "COMPLETED".equals(status);
+        }
+
+        /** FAILED or CANCELLED: the money stayed with the shop. */
+        public boolean failed() {
+            return "FAILED".equals(status) || "CANCELLED".equals(status);
+        }
+    }
+
+    // ── Webhooks ────────────────────────────────────────────────────────────────────────────────────────────
+
+    /** The five PAYPAL-* headers PayPal sends with every webhook delivery. */
+    public record WebhookHeaders(String authAlgo, String certUrl, String transmissionId, String transmissionSig,
+                                 String transmissionTime) {
+        public boolean complete() {
+            return notBlank(authAlgo) && notBlank(certUrl) && notBlank(transmissionId) && notBlank(transmissionSig)
+                    && notBlank(transmissionTime);
+        }
+
+        private static boolean notBlank(String s) {
+            return s != null && !s.isBlank();
+        }
+    }
+
+    /**
+     * Asks PayPal whether a webhook delivery really came from PayPal for our webhook. The event goes back exactly as it
+     * arrived (spliced in as raw JSON, not re-serialised), because re-encoding it can change number formats or field
+     * order and make a genuine event fail verification.
+     *
+     * <p>Docs: https://developer.paypal.com/docs/api/webhooks/v1/#verify-webhook-signature_post
+     * (POST /v1/notifications/verify-webhook-signature; checked against notifications_webhooks_v1.json). Request, all
+     * required: auth_algo, cert_url, transmission_id, transmission_sig, transmission_time (from the PAYPAL-AUTH-ALGO,
+     * PAYPAL-CERT-URL, PAYPAL-TRANSMISSION-ID, PAYPAL-TRANSMISSION-SIG, PAYPAL-TRANSMISSION-TIME headers), webhook_id,
+     * webhook_event. Response: verification_status SUCCESS | FAILURE.
+     */
+    public boolean verifyWebhook(WebhookHeaders h, String rawEvent) {
+        if (!cfg.webhookConfigured()) throw new PayPalException("No LEASH_PAYPAL_WEBHOOK_ID set, so webhooks can't be verified.");
+        var fields = new LinkedHashMap<String, Object>();
+        fields.put("auth_algo", h.authAlgo());
+        fields.put("cert_url", h.certUrl());
+        fields.put("transmission_id", h.transmissionId());
+        fields.put("transmission_sig", h.transmissionSig());
+        fields.put("transmission_time", h.transmissionTime());
+        fields.put("webhook_id", cfg.webhookId());
+        String head = JSON.writeValueAsString(fields);
+        String body = head.substring(0, head.length() - 1) + ",\"webhook_event\":" + rawEvent + "}";
+        Map<String, Object> res = call("verify webhook", () -> http.post()
+                .uri("/v1/notifications/verify-webhook-signature")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(MAP));
+        return res != null && "SUCCESS".equals(res.get("verification_status"));
+    }
+
+    private static final tools.jackson.databind.json.JsonMapper JSON = tools.jackson.databind.json.JsonMapper.builder().build();
+
     /** Docs: https://developer.paypal.com/docs/api/orders/v2/#orders_get */
     public PayPalOrder getOrder(String orderId) {
         return PayPalOrder.from(call("get order", () -> http.get()

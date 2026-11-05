@@ -34,6 +34,13 @@ public final class Http {
                 .POST(HttpRequest.BodyPublishers.ofString(json == null ? "" : json)));
     }
 
+    public Res post(String path, String json, java.util.Map<String, String> headers) {
+        var b = HttpRequest.newBuilder(uri(path)).header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json == null ? "" : json));
+        headers.forEach(b::header);
+        return send(b);
+    }
+
     public Res put(String path, String json) {
         return send(HttpRequest.newBuilder(uri(path)).header("Content-Type", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofString(json)));

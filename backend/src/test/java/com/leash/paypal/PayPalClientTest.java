@@ -170,4 +170,50 @@ class PayPalClientTest {
         org.assertj.core.api.Assertions.assertThat(PayPalClient.maskEmail("nobody")).isEqualTo("•••");
         org.assertj.core.api.Assertions.assertThat(PayPalClient.maskEmail(null)).isNull();
     }
+
+    // ── T15: refunds + webhook verification ─────────────────────────────────────────────────────────────────
+
+    @Test
+    void refundsACaptureInFullWithAFixedIdempotencyKey() {
+        var first = client.refundCapture("CAP-1", "refund-req-1");
+        var again = client.refundCapture("CAP-1", "refund-req-1");
+        assertThat(first.completed()).isTrue();
+        assertThat(again.id()).isEqualTo(first.id());
+        var sent = fake.last("POST", "/v2/payments/captures/CAP-1/refund");
+        assertThat(sent.header("PayPal-Request-Id")).isEqualTo("refund-req-1");
+        assertThat(sent.body()).isEmpty(); // empty body = full refund
+    }
+
+    @Test
+    void refundErrorsCarryPayPalsIssueName() {
+        fake.failNextRefundWith = 422;
+        assertThatThrownBy(() -> client.refundCapture("CAP-1", "r"))
+                .isInstanceOfSatisfying(PayPalException.class, e -> assertThat(e.errorName()).isEqualTo("CAPTURE_FULLY_REFUNDED"));
+    }
+
+    @Test
+    void verifiesWebhooksBySendingTheEventBackUnchanged() {
+        var cfg = new LeashProperties.PayPal(fake.baseUrl(), "client-id", "client-secret", null, "WH-123");
+        var c = new PayPalClient(cfg, "http://localhost:8080", RestClient.builder(), clock);
+        var headers = new PayPalClient.WebhookHeaders("SHA256withRSA", "https://api.sandbox.paypal.com/cert", "tx-1", "sig", "2026-11-04T10:00:00Z");
+        String raw = "{\"id\":\"WH-EVT-1\",\"event_type\":\"PAYMENT.CAPTURE.COMPLETED\",\"resource\":{\"id\":\"CAP-1\",\"amount\":{\"value\":\"18.40\"}}}";
+
+        assertThat(c.verifyWebhook(headers, raw)).isTrue();
+        var sent = fake.last("POST", "/v1/notifications/verify-webhook-signature");
+        assertThat(sent.body()).containsEntry("webhook_id", "WH-123").containsEntry("auth_algo", "SHA256withRSA")
+                .containsEntry("cert_url", "https://api.sandbox.paypal.com/cert").containsEntry("transmission_id", "tx-1")
+                .containsEntry("transmission_sig", "sig").containsEntry("transmission_time", "2026-11-04T10:00:00Z");
+        assertThat(sent.body().get("webhook_event")).isEqualTo(Map.of("id", "WH-EVT-1", "event_type", "PAYMENT.CAPTURE.COMPLETED",
+                "resource", Map.of("id", "CAP-1", "amount", Map.of("value", "18.40"))));
+
+        fake.webhookVerification = "FAILURE";
+        assertThat(c.verifyWebhook(headers, raw)).isFalse();
+    }
+
+    @Test
+    void refusesToVerifyWithoutAWebhookId() {
+        var headers = new PayPalClient.WebhookHeaders("a", "b", "c", "d", "e");
+        assertThatThrownBy(() -> client.verifyWebhook(headers, "{}")).isInstanceOf(PayPalException.class);
+        assertThat(fake.count("POST", "/v1/notifications")).isZero();
+    }
 }

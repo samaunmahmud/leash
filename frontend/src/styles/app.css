@@ -166,6 +166,7 @@ body.has-drawer { overflow: hidden; }
 @keyframes arrive { from { background: var(--accent-soft); } to { background: transparent; } }
 .ledger td .id-mark { margin-right: 7px; }
 .entry-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.entry-actions-ask { flex-basis: 100%; font-size: 13.5px; color: var(--text-2); }
 .reason-ai, .reason-pay { grid-column: 1 / -1; }
 .reason-ai { padding: 10px 12px; border-radius: var(--r-sm); background: var(--panel-2); font-size: 13.5px; }
 .reason-ai .label { margin-right: 8px; }

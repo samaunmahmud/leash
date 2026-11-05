@@ -110,6 +110,32 @@ public class PaymentService {
         }
     }
 
+    /**
+     * "Regret": refunds a paid purchase in full through PayPal. Only the human can do this (dashboard), never an agent.
+     * Safe to repeat: the PayPal-Request-Id is fixed per entry, so PayPal hands back the same refund rather than a
+     * second one, and an entry already REFUNDED is returned as is. A refund frees the length, because REFUNDED doesn't
+     * count toward spend.
+     */
+    public LedgerEntry refund(String entryId) {
+        LedgerEntry e = ledger.get(entryId);
+        if (e.status() == EntryStatus.REFUNDED) return e;
+        if (e.status() != EntryStatus.PAID || e.paypalCaptureId() == null) {
+            throw new IllegalStateException("Only a purchase paid through PayPal can be refunded (this one is " + e.status() + ").");
+        }
+        PayPalClient.Refund refund = paypal.refundCapture(e.paypalCaptureId(), "refund-" + e.id());
+        if (refund.failed()) {
+            throw new IllegalStateException("PayPal reported the refund as " + refund.status() + ". Nothing was refunded.");
+        }
+        String amount = Money.format(e.request().amountMinor(), e.request().currency());
+        LedgerEntry next = refund.completed()
+                ? e.withRefund(refund.id(), ledger.now()).withStatus(EntryStatus.REFUNDED,
+                        "Refunded " + amount + " via PayPal sandbox. The length is freed.", ledger.now())
+                : e.withRefund(refund.id(), ledger.now()).withStatus(EntryStatus.PAID,
+                        "Refund of " + amount + " requested; PayPal reports it as " + refund.status() + ".", ledger.now());
+        // If a webhook got there first, keep what it wrote.
+        return ledger.updateIf(next, EntryStatus.PAID).orElseGet(() -> ledger.get(entryId));
+    }
+
     /** PayPal sent the payer back: capture the matching entry, if there is one. */
     public Optional<LedgerEntry> captureByOrder(String orderId) {
         return repo.findByOrderId(orderId).map(e -> capture(e.id()));

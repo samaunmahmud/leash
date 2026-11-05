@@ -65,6 +65,20 @@ public class LedgerRepository {
                 .update();
     }
 
+    /**
+     * Same as {@link #update} but only if the entry is still in {@code expected}. Returns false if something else (a
+     * webhook, a second click) moved it first, so two paths can't both act on one payment.
+     */
+    public boolean updateIfStatus(LedgerEntry e, EntryStatus expected) {
+        return jdbc.sql("""
+                        UPDATE ledger_entries SET status = ?, status_detail = ?, paypal_order_id = ?,
+                          paypal_capture_id = ?, paypal_refund_id = ?, approve_url = ?, updated_at = ?
+                        WHERE id = ? AND status = ?""")
+                .params(e.status().name(), truncate(e.statusDetail(), 500), e.paypalOrderId(), e.paypalCaptureId(),
+                        e.paypalRefundId(), e.approveUrl(), Db.ts(e.updatedAt()), e.id(), expected.name())
+                .update() == 1;
+    }
+
     public Optional<LedgerEntry> find(String id) {
         return jdbc.sql(SELECT + "WHERE l.id = ?").param(id).query(LedgerRepository::map).optional();
     }
@@ -140,6 +154,7 @@ public class LedgerRepository {
 
     /** Wipes the ledger (demo reset only). */
     public void deleteAll() {
+        jdbc.sql("DELETE FROM webhook_events").update();
         jdbc.sql("DELETE FROM tugs").update();
         jdbc.sql("DELETE FROM ledger_entries").update();
     }
