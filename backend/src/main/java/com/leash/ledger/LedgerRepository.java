@@ -22,7 +22,8 @@ public class LedgerRepository {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final TypeReference<List<Reason>> REASONS = new TypeReference<>() {};
-    private static final String SELECT = "SELECT l.*, t.id AS tug_id FROM ledger_entries l LEFT JOIN tugs t ON t.entry_id = l.id ";
+    private static final String SELECT = "SELECT l.*, t.id AS tug_id, t.status AS tug_status, t.resolved_at AS tug_resolved_at "
+            + "FROM ledger_entries l LEFT JOIN tugs t ON t.entry_id = l.id ";
     private static final String SPEND_STATUSES = EntryStatus.COUNTS_TOWARD_SPEND.stream()
             .map(s -> "'" + s.name() + "'").collect(Collectors.joining(","));
 
@@ -152,8 +153,23 @@ public class LedgerRepository {
                 .query(LedgerRepository::mapTug).list();
     }
 
-    /** Wipes the ledger (demo reset only). */
+    /** A tug the human answered, with its entry: the history mandate learning reads. */
+    public record AnsweredTug(LedgerEntry entry, boolean approved, Instant resolvedAt) {}
+
+    /** Tugs for one agent answered (approved or denied) since a moment, oldest first. */
+    public List<AnsweredTug> answeredTugs(String agentId, Instant from) {
+        return jdbc.sql(SELECT + "WHERE l.agent_id = ? AND t.status IN ('APPROVED', 'DENIED') AND t.resolved_at >= ? "
+                        + "ORDER BY t.resolved_at, l.id")
+                .params(agentId, Db.ts(from))
+                .query((rs, i) -> new AnsweredTug(map(rs, i), "APPROVED".equals(rs.getString("tug_status")),
+                        Db.instant(rs, "tug_resolved_at")))
+                .list();
+    }
+
+    /** Wipes the ledger (demo reset only). Leash changes go too: the reset puts every mandate back as seeded. */
     public void deleteAll() {
+        jdbc.sql("DELETE FROM suggestion_dismissals").update();
+        jdbc.sql("DELETE FROM leash_changes").update();
         jdbc.sql("DELETE FROM webhook_events").update();
         jdbc.sql("DELETE FROM tugs").update();
         jdbc.sql("DELETE FROM ledger_entries").update();

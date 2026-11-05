@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-export type Tab = "leashes" | "tugs" | "ledger" | "new";
+export type Tab = "leashes" | "tugs" | "ledger" | "report" | "new";
 export type Route = { page: "landing" } | { page: "app"; tab: Tab };
 
-const TABS: Tab[] = ["leashes", "tugs", "ledger", "new"];
+const TABS: Tab[] = ["leashes", "tugs", "ledger", "report", "new"];
 
 /** "#/app/tugs" → app/tugs. Anything not under #/app (including landing anchors like #ledger) is the landing page. */
 export function parseRoute(hash: string): Route {

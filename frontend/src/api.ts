@@ -9,6 +9,8 @@ import type {
   TugView,
   WalletView,
   AgentKey,
+  LeashChange,
+  WalkReport,
 } from "./types";
 import { SAMPLE_LEDGER } from "./lib/sample";
 
@@ -87,6 +89,14 @@ export const fetchLedger = (agentId?: string) =>
   get<LedgerEntry[]>(`/api/ledger${agentId ? `?agentId=${encodeURIComponent(agentId)}` : ""}`);
 export const captureEntry = (id: string) => post<LedgerEntry>(`/api/ledger/${encodeURIComponent(id)}/capture`);
 export const refundEntry = (id: string) => post<LedgerEntry>(`/api/ledger/${encodeURIComponent(id)}/refund`);
+
+// ── Mandate learning + walk reports ──
+export const fetchWalkReports = () => get<WalkReport[]>("/api/walk-reports");
+export const fetchLeashChanges = () => get<LeashChange[]>("/api/leash-changes");
+export const acceptSuggestion = (agentId: string, toMinor: number) =>
+  post<LeashChange>(`/api/leashes/${encodeURIComponent(agentId)}/suggestion/accept`, { toMinor });
+export const dismissSuggestion = (agentId: string, toMinor: number) =>
+  post<void>(`/api/leashes/${encodeURIComponent(agentId)}/suggestion/dismiss`, { toMinor });
 
 // ── Demo ──
 export const runDemo = () => post<unknown>("/api/demo/run?paceMs=1800&reset=true");

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchLeashes, fetchLedger, fetchTugs } from "../api";
-import type { LeashCard, LedgerEntry, TugView } from "../types";
+import { fetchLeashChanges, fetchLeashes, fetchLedger, fetchTugs } from "../api";
+import type { LeashCard, LeashChange, LedgerEntry, TugView } from "../types";
 
 export type StreamState = "connecting" | "live" | "offline";
 
@@ -8,6 +8,8 @@ export interface LeashData {
   leashes: LeashCard[];
   tugs: TugView[];
   ledger: LedgerEntry[];
+  /** Accepted leash changes (mandate learning), newest first. */
+  changes: LeashChange[];
   loaded: boolean;
   error: string | null;
   stream: StreamState;
@@ -35,6 +37,7 @@ export function useLeashData(): LeashData {
   const [leashes, setLeashes] = useState<LeashCard[]>([]);
   const [tugs, setTugs] = useState<TugView[]>([]);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [changes, setChanges] = useState<LeashChange[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stream, setStream] = useState<StreamState>("connecting");
@@ -42,11 +45,12 @@ export function useLeashData(): LeashData {
   const timer = useRef<number | undefined>(undefined);
 
   const refresh = useCallback(() => {
-    Promise.all([fetchLeashes(), fetchTugs(), fetchLedger()])
-      .then(([l, t, g]) => {
+    Promise.all([fetchLeashes(), fetchTugs(), fetchLedger(), fetchLeashChanges()])
+      .then(([l, t, g, c]) => {
         setLeashes(l);
         setTugs(t);
         setLedger(g);
+        setChanges(c);
         setError(null);
       })
       .catch((e: Error) => setError(e.message))
@@ -58,6 +62,7 @@ export function useLeashData(): LeashData {
     timer.current = window.setTimeout(() => {
       fetchLeashes().then(setLeashes).catch(() => {});
       fetchTugs().then(setTugs).catch(() => {});
+      fetchLeashChanges().then(setChanges).catch(() => {});
     }, 120);
   }, []);
 
@@ -88,5 +93,5 @@ export function useLeashData(): LeashData {
     };
   }, [refresh, refreshSoon]);
 
-  return { leashes, tugs, ledger, loaded, error, stream, latestId, refresh };
+  return { leashes, tugs, ledger, changes, loaded, error, stream, latestId, refresh };
 }

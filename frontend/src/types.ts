@@ -177,3 +177,71 @@ export interface WalletView {
   approveUrl: string | null;
   paypalConfigured: boolean;
 }
+
+// ── Mandate learning + walk report (T16) ──
+
+/** A suggested slack raise. Every number is Leash's own arithmetic; only `sentence` may be AI-worded (`byAi`). */
+export interface SlackSuggestion {
+  agentId: string;
+  fromMinor: number;
+  toMinor: number;
+  currency: string;
+  approvals: number;
+  lowestApprovedMinor: number;
+  highestApprovedMinor: number;
+  category: string | null;
+  sentence: string;
+  byAi: boolean;
+}
+
+/** An accepted change to a leash, kept as an audit trail next to the ledger. */
+export interface LeashChange {
+  id: string;
+  agentId: string;
+  kind: "SLACK_RAISED";
+  fromMinor: number;
+  toMinor: number;
+  currency: string;
+  summary: string;
+  evidence: string;
+  createdAt: string;
+}
+
+export interface NotableBlock {
+  entryId: string;
+  at: string;
+  description: string;
+  merchant: string;
+  amountMinor: number;
+  currency: string;
+  code: string;
+  reason: string;
+  evidence: string | null;
+}
+
+export interface WalkReport {
+  agentId: string;
+  agentName: string;
+  agentKind: string;
+  revoked: boolean;
+  from: string;
+  to: string;
+  period: Mandate["period"];
+  currency: string;
+  lengthMinor: number;
+  usedMinor: number;
+  pendingMinor: number;
+  requests: number;
+  /** Approved by the rules without asking (paid or still waiting for PayPal). */
+  approved: number;
+  paid: number;
+  tugged: number;
+  blocked: number;
+  refunded: number;
+  paidMinor: number;
+  notableBlocks: NotableBlock[];
+  suggestion: SlackSuggestion | null;
+  changes: LeashChange[];
+  summary: string;
+  summaryByAi: boolean;
+}

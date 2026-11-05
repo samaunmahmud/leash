@@ -9,8 +9,9 @@ import { TugList } from "./TugList";
 const LedgerGrid = lazy(() => import("./LedgerGrid").then((m) => ({ default: m.LedgerGrid })));
 import { NewLeash } from "./NewLeash";
 import { WalletCard } from "./WalletCard";
+import { ChangeList, WalkReports } from "./WalkReports";
 
-const TAB_LABEL: Record<Tab, string> = { leashes: "Leashes", tugs: "Tugs", ledger: "Ledger", new: "New leash" };
+const TAB_LABEL: Record<Tab, string> = { leashes: "Leashes", tugs: "Tugs", ledger: "Ledger", report: "Walk report", new: "New leash" };
 
 /** The signed-in view: leashes, tugs waiting for you, the ledger, and the mandate composer. Live over SSE. */
 export function Dashboard({ tab }: { tab: Tab }) {
@@ -68,9 +69,25 @@ export function Dashboard({ tab }: { tab: Tab }) {
         ) : tab === "tugs" ? (
           <TugList tugs={data.tugs} leashes={data.leashes} onChanged={data.refresh} />
         ) : tab === "ledger" ? (
-          <Suspense fallback={<p className="empty">Loading the ledger…</p>}>
-            <LedgerGrid ledger={data.ledger} leashes={data.leashes} latestId={data.latestId} onChanged={data.refresh} />
-          </Suspense>
+          <div className="stack">
+            <Suspense fallback={<p className="empty">Loading the ledger…</p>}>
+              <LedgerGrid ledger={data.ledger} leashes={data.leashes} latestId={data.latestId} onChanged={data.refresh} />
+            </Suspense>
+            {data.changes.length > 0 && (
+              <section className="card ledger-changes" aria-labelledby="ledger-changes-h">
+                <div className="card-head">
+                  <div>
+                    <h3 id="ledger-changes-h">Leash changes</h3>
+                    <p className="sub">Suggestions you accepted, with the history behind them.</p>
+                  </div>
+                </div>
+                <ChangeList changes={data.changes}
+                            agentName={(id) => data.leashes.find((l) => l.agent.id === id)?.agent.name ?? id} />
+              </section>
+            )}
+          </div>
+        ) : tab === "report" ? (
+          <WalkReports ledger={data.ledger} leashes={data.leashes} onChanged={data.refresh} />
         ) : (
           <NewLeash onCreated={data.refresh} />
         )}
