@@ -122,7 +122,13 @@ public class PaymentService {
         if (e.status() != EntryStatus.PAID || e.paypalCaptureId() == null) {
             throw new IllegalStateException("Only a purchase paid through PayPal can be refunded (this one is " + e.status() + ").");
         }
-        PayPalClient.Refund refund = paypal.refundCapture(e.paypalCaptureId(), "refund-" + e.id());
+        PayPalClient.Refund refund;
+        try {
+            refund = paypal.refundCapture(e.paypalCaptureId(), "refund-" + e.id());
+        } catch (PayPalException ex) {
+            if (ex.status() == 403) throw new IllegalStateException(REFUND_NOT_ALLOWED + debugId(ex));
+            throw ex;
+        }
         if (refund.failed()) {
             throw new IllegalStateException("PayPal reported the refund as " + refund.status() + ". Nothing was refunded.");
         }
@@ -134,6 +140,21 @@ public class PaymentService {
                         "Refund of " + amount + " requested; PayPal reports it as " + refund.status() + ".", ledger.now());
         // If a webhook got there first, keep what it wrote.
         return ledger.updateIf(next, EntryStatus.PAID).orElseGet(() -> ledger.get(entryId));
+    }
+
+    /**
+     * PayPal's 403 on a refund, in words. Seen live: the payee was another (personal) account, so the money never
+     * reached this app's account and PayPal answered NOT_AUTHORIZED / PERMISSION_DENIED.
+     */
+    static final String REFUND_NOT_ALLOWED = "PayPal didn't let Leash refund this payment, so nothing was refunded. "
+            + "This happens when the money went to a different PayPal account than this app's own, usually because "
+            + "LEASH_PAYPAL_PAYEE_EMAIL names another account. Refund it in PayPal from the account that received it, "
+            + "and leave LEASH_PAYPAL_PAYEE_EMAIL empty so future purchases can be refunded here.";
+
+    /** " (PayPal debug_id X)" from the exception's safe message, for PayPal support; empty if there is none. */
+    static String debugId(PayPalException ex) {
+        var m = java.util.regex.Pattern.compile("debug_id=([A-Za-z0-9]+)").matcher(String.valueOf(ex.getMessage()));
+        return m.find() ? " (PayPal debug_id " + m.group(1) + ")" : "";
     }
 
     /** PayPal sent the payer back: capture the matching entry, if there is one. */

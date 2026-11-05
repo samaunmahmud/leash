@@ -29,6 +29,15 @@ public class AppConfig {
         };
     }
 
+    /** Says loudly when the PayPal payee would make every Regret refund fail (see LeashProperties.PayPal#payeeWarning). */
+    @Bean
+    ApplicationRunner warnAboutPayee(LeashProperties props) {
+        return args -> {
+            String warning = props.paypal().payeeWarning();
+            if (warning != null) org.slf4j.LoggerFactory.getLogger(AppConfig.class).warn(warning);
+        };
+    }
+
     /** Seeds the three demo leashes on an empty database. */
     @Bean
     @ConditionalOnBooleanProperty(name = "leash.seed-demo", matchIfMissing = true)

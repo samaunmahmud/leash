@@ -52,6 +52,27 @@ public record LeashProperties(PayPal paypal, Llm llm, String corsOrigins, String
         public boolean webhookConfigured() {
             return notBlank(webhookId);
         }
+
+        /**
+         * A startup warning when the payee can't work with Regret, else null. With a payee email on the order the money
+         * goes to that account; PayPal lets this app capture for it but only the receiving merchant may refund, so a
+         * Personal sandbox payee (…@personal.example.com) makes every refund fail with 403 PERMISSION_DENIED. Seen live
+         * on 2026-11-05. Empty = paid into the REST app's own business account, which can refund.
+         */
+        public String payeeWarning() {
+            if (!notBlank(payeeEmail)) return null;
+            String e = payeeEmail.trim().toLowerCase(Locale.ROOT);
+            if (!e.endsWith("@personal.example.com")) return null;
+            return "LEASH_PAYPAL_PAYEE_EMAIL is a Personal sandbox account (" + mask(e) + "). PayPal lets Leash take "
+                    + "payments for it but not refund them, so Regret will fail with 403 PERMISSION_DENIED. Leave "
+                    + "LEASH_PAYPAL_PAYEE_EMAIL empty to be paid into this app's own sandbox business account.";
+        }
+
+        /** "sb-abc123@personal.example.com" → "sb***@personal.example.com": enough to recognise, not the address. */
+        static String mask(String email) {
+            int at = email.indexOf('@');
+            return (at <= 2 ? "" : email.substring(0, 2)) + "***" + (at < 0 ? "" : email.substring(at));
+        }
     }
 
     /**

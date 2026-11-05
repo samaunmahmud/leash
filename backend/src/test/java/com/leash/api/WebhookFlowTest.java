@@ -337,6 +337,20 @@ class WebhookFlowTest {
     }
 
     @Test
+    void paypalRefusingTheRefundIsExplainedInPlainEnglish() {
+        String[] p = paid(1_840);
+        fake.failNextRefundWith = 403;
+        var res = http.post("/api/ledger/" + p[0] + "/refund", "");
+        assertThat(res.status()).isEqualTo(409);
+        assertThat(res.json().get("detail").asString())
+                .startsWith("PayPal didn't let Leash refund this payment, so nothing was refunded.")
+                .contains("different PayPal account", "LEASH_PAYPAL_PAYEE_EMAIL", "(PayPal debug_id dbgref)");
+        var entry = http.get("/api/ledger/" + p[0]).json();
+        assertThat(entry.get("status").asString()).isEqualTo("PAID");
+        assertThat(entry.get("paypalRefundId").isNull()).isTrue();
+    }
+
+    @Test
     void onlyPaidPurchasesCanBeRefunded() {
         String[] e = awaiting(1_840);
         assertThat(http.post("/api/ledger/" + e[0] + "/refund", "").status()).isEqualTo(409);

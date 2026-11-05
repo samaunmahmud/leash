@@ -255,8 +255,12 @@ public final class FakePayPalServer implements AutoCloseable {
         if (failNextRefundWith != 0) {
             int status = failNextRefundWith;
             failNextRefundWith = 0;
-            send(ex, status, Map.of("name", "UNPROCESSABLE_ENTITY", "debug_id", "dbgref",
-                    "details", List.of(Map.of("issue", "CAPTURE_FULLY_REFUNDED"))));
+            // 403 is what the real sandbox answered when the payee was another (personal) account.
+            send(ex, status, status == 403
+                    ? Map.of("name", "NOT_AUTHORIZED", "debug_id", "dbgref",
+                            "details", List.of(Map.of("issue", "PERMISSION_DENIED")))
+                    : Map.of("name", "UNPROCESSABLE_ENTITY", "debug_id", "dbgref",
+                            "details", List.of(Map.of("issue", "CAPTURE_FULLY_REFUNDED"))));
             return;
         }
         if (requestId != null && refundsByRequestId.containsKey(requestId)) {
