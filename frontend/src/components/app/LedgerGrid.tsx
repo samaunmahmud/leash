@@ -288,6 +288,19 @@ export function EntryActions({ entry, onChanged }: { entry: LedgerEntry; onChang
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // The button pressed disappears when the question swaps in (and back), so move focus on purpose: to "Keep it"
+  // (Enter never refunds by accident, and it scrolls the question into view on phones), then back to Regret.
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const regretRef = useRef<HTMLButtonElement>(null);
+  const asked = useRef(false);
+  useEffect(() => {
+    if (confirming) {
+      asked.current = true;
+      keepRef.current?.focus();
+    } else if (asked.current) {
+      regretRef.current?.focus();
+    }
+  }, [confirming]);
   const run = (call: (id: string) => Promise<LedgerEntry>) => {
     setBusy(true);
     setError(null);
@@ -318,14 +331,14 @@ export function EntryActions({ entry, onChanged }: { entry: LedgerEntry; onChang
       <div className="entry-actions">
         {confirming ? (
           <>
-            <span className="entry-actions-ask">Refund {amount} in full to your PayPal?</span>
+            <span className="entry-actions-ask" role="status">Refund {amount} in full to your PayPal?</span>
             <button type="button" className="btn" disabled={busy} onClick={() => run(refundEntry)}>
               {busy ? "Refunding…" : `Yes, refund ${amount}`}
             </button>
-            <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setConfirming(false)}>Keep it</button>
+            <button ref={keepRef} type="button" className="btn btn-ghost" disabled={busy} onClick={() => setConfirming(false)}>Keep it</button>
           </>
         ) : (
-          <button type="button" className="btn" onClick={() => setConfirming(true)}>Regret: refund</button>
+          <button ref={regretRef} type="button" className="btn" onClick={() => setConfirming(true)}>Regret: refund</button>
         )}
         {error && <p className="form-error" role="alert">{error}</p>}
       </div>
