@@ -68,14 +68,21 @@ public final class DatabaseUrl {
         });
     }
 
-    /** One quick connection attempt, at most about 5 seconds. */
+    /**
+     * Up to two connection attempts of about 20 seconds each. Render's free instance is slow this early in startup:
+     * 5 seconds timed out there against a healthy database (2026-11-06).
+     */
     static boolean reachable(Jdbc j) {
+        return tryConnect(j) || tryConnect(j);
+    }
+
+    private static boolean tryConnect(Jdbc j) {
         var props = new java.util.Properties();
         if (j.user() != null) props.setProperty("user", j.user());
         if (j.password() != null) props.setProperty("password", j.password());
-        props.setProperty("connectTimeout", "5");
-        props.setProperty("loginTimeout", "5");
-        props.setProperty("socketTimeout", "5");
+        props.setProperty("connectTimeout", "20");
+        props.setProperty("loginTimeout", "25");
+        props.setProperty("socketTimeout", "20");
         // The driver directly, not DriverManager: this runs in main() before Spring, and inside the packaged jar
         // DriverManager may not see drivers loaded by the jar's class loader yet (seen on Render: it always fell back).
         try {
