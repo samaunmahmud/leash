@@ -122,7 +122,7 @@ function KeyPanel({ k, onClose }: { k: AgentKey; onClose: () => void }) {
       <code className="num key-value">{k.key}</code>
       <p className="xs dim">MCP URL <span className="num">{k.mcpUrl}</span>. Send it as <span className="num">Authorization: Bearer …</span></p>
       <details>
-        <summary className="small">Claude Desktop config</summary>
+        <summary className="small">MCP client config (JSON, via mcp-remote)</summary>
         <pre className="num key-config">{config}</pre>
       </details>
       <div className="entry-actions">
