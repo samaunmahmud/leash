@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Health } from "../../types";
-import { unlockOwner } from "../../api";
+import { OWNER_NEEDED, unlockOwner } from "../../api";
 import { onOwnerChange, ownerPassphrase, setOwnerPassphrase } from "../../lib/owner";
 
 /**
@@ -14,7 +14,18 @@ export function OwnerUnlock({ health }: { health: Health | null }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const [asked, setAsked] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
   useEffect(() => onOwnerChange(() => setUnlocked(!!ownerPassphrase())), []);
+  useEffect(() => {
+    const open = () => { setOpen(true); setAsked(true); setErr(null); };
+    window.addEventListener(OWNER_NEEDED, open);
+    return () => window.removeEventListener(OWNER_NEEDED, open);
+  }, []);
+  useEffect(() => {
+    if (open) formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [open]);
 
   if (!health?.ownerGated) return null;
   if (!health.ownerEnabled) {
@@ -37,19 +48,20 @@ export function OwnerUnlock({ health }: { health: Health | null }) {
     setBusy(true);
     setErr(null);
     unlockOwner(text)
-      .then(() => { setOpen(false); setText(""); })
+      .then(() => { setOpen(false); setText(""); setAsked(false); })
       .catch((e: Error) => setErr(e.message))
       .finally(() => setBusy(false));
   };
 
   return (
-    <form className="owner-form" onSubmit={submit}>
+    <form className="owner-form" onSubmit={submit} ref={formRef}>
+      {asked && <p className="owner-hint small">That needs owner mode. Enter the passphrase, then try again.</p>}
       <label htmlFor="owner-pass" className="sr-only">Owner passphrase</label>
       <input id="owner-pass" type="password" value={text} onChange={(e) => setText(e.target.value)}
              placeholder="Owner passphrase" autoComplete="current-password" autoFocus
-             onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }} />
+             onKeyDown={(e) => { if (e.key === "Escape") { setOpen(false); setAsked(false); } }} />
       <button type="submit" className="btn btn-primary" disabled={busy || !text}>Unlock</button>
-      <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
+      <button type="button" className="btn btn-ghost" onClick={() => { setOpen(false); setAsked(false); }}>Cancel</button>
       {err && <p className="owner-err small" role="alert">{err}</p>}
     </form>
   );

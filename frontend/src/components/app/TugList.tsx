@@ -11,7 +11,10 @@ export function TugList({ tugs, leashes, onChanged }: { tugs: TugView[]; leashes
     return (
       <>
         {done && <Answered view={done} />}
-        <p className="empty">Nothing waiting. Purchases above an agent's slack, or that look odd, show up here.</p>
+        <p className="empty">
+          Nothing waiting. Purchases above an agent's slack, or that look odd, show up here.
+          {!done && <> Press <b>Run demo</b> to see one: Larder bot's £32 shop needs your nod.</>}
+        </p>
       </>
     );
   }

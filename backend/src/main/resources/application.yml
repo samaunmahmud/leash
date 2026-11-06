@@ -41,7 +41,7 @@ leash:
     model: ${LEASH_LLM_MODEL:}
     max-calls-per-day: ${LEASH_LLM_MAX_CALLS_PER_DAY:500}
     reasoning-effort: ${LEASH_LLM_REASONING_EFFORT:}
-  cors-origins: ${LEASH_CORS_ORIGINS:http://localhost:5173}
+  cors-origins: ${LEASH_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
   # On Render both default to RENDER_EXTERNAL_URL (set by Render): the dashboard is served by the backend there.
   public-url: ${LEASH_PUBLIC_URL:${RENDER_EXTERNAL_URL:http://localhost:8080}}
   app-url: ${LEASH_APP_URL:${RENDER_EXTERNAL_URL:http://localhost:5173}}

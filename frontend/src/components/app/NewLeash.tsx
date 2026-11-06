@@ -131,7 +131,8 @@ export function NewLeash({ onCreated }: { onCreated: () => void }) {
         setNotes(p.notes);
       })
       .catch((e: unknown) => {
-        if (e instanceof ApiError && e.status === 400) {
+        // 400: the text didn't make sense. 401/403: the owner gate, not the AI: say so rather than fall back.
+        if (e instanceof ApiError && (e.status === 400 || e.code === "OWNER_REQUIRED" || e.code === "OWNER_DISABLED")) {
           setError(e.message);
           return;
         }

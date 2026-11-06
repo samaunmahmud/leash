@@ -17,6 +17,9 @@ import { ownerPassphrase, setOwnerPassphrase } from "./lib/owner";
 
 // Every call to the backend lives here, so components never build URLs themselves.
 
+/** Fired on window when an owner-only call was refused for want of the passphrase. */
+export const OWNER_NEEDED = "leash:owner-needed";
+
 /** An API error carrying the server's problem-JSON sentence, so the UI can show it as-is. */
 export class ApiError extends Error {
   constructor(
@@ -52,6 +55,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     if (res.status === 429 && !code) msg = "Too many requests. Wait a moment and try again.";
     // A remembered passphrase that's now refused (changed on the server): forget it so the unlock button shows again.
     if (code === "OWNER_REQUIRED" && owner) setOwnerPassphrase(null);
+    // Owner-only action while locked: the Owner mode control opens itself so the next step is obvious.
+    if (code === "OWNER_REQUIRED" && typeof window !== "undefined") window.dispatchEvent(new Event(OWNER_NEEDED));
     throw new ApiError(msg, res.status, code);
   }
   if (res.status === 204) return undefined as T;

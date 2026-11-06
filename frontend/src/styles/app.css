@@ -253,3 +253,9 @@ body.has-drawer { overflow: hidden; }
 .owner-err { flex-basis: 100%; margin: 0; color: var(--neg); }
 .owner-state { align-self: center; padding: 0 6px; }
 .hero-run { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; }
+.owner-hint { flex-basis: 100%; margin: 0; color: var(--text-2); }
+/* Phones: the three leash-card actions fit on one row. */
+@media (max-width: 420px) {
+  .card-foot { gap: 4px; padding: 10px 12px; }
+  .card-foot .btn { padding: 0 12px; }
+}

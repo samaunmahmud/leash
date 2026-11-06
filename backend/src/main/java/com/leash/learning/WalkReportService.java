@@ -80,7 +80,8 @@ public class WalkReportService {
             - Write every number with digits, exactly as given, with the £ sign for money. Never spell numbers as words.
             - Leash makes every decision, not the agent: write "Leash blocked", never "the agent blocked".
             - Mention approved, held and blocked requests before payment details.
-            - If something was blocked, say what kind of thing in a few words.
+            - If something was blocked, give the reason using the wording from the facts (e.g. "because a shop page \
+            tried to give the agent hidden instructions"); don't squash it into a compound noun.
 
             Reply with only a JSON object: {"summary": "..."}""";
 
