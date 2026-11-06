@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { money } from "../../lib/format";
 import { previewMandate } from "../../lib/mandatePreview";
 import { LeashGraph } from "./LeashGraph";
+import { runDemo } from "../../api";
 
 const EXAMPLES = [
   "Groceries, £60 a week, supermarkets only, ask me over £25",
@@ -9,9 +10,22 @@ const EXAMPLES = [
   "Train and hotels, £400 a trip, ask me over £150",
 ];
 
-export function Hero() {
+/** @param canRun the API answered, so the demo can really run (the offline preview can't) */
+export function Hero({ canRun = false }: { canRun?: boolean }) {
   const [text, setText] = useState(EXAMPLES[0]);
   const [submitted, setSubmitted] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [runErr, setRunErr] = useState<string | null>(null);
+
+  // Starts the paced scenario, then opens the ledger so the visitor watches each decision arrive.
+  const run = () => {
+    setRunning(true);
+    setRunErr(null);
+    runDemo()
+      .then(() => { window.location.hash = "#/app/ledger"; })
+      .catch((e: Error) => setRunErr(e.message))
+      .finally(() => setRunning(false));
+  };
   const p = previewMandate(text);
 
   const submit = (e: FormEvent) => {
@@ -35,6 +49,16 @@ export function Hero() {
                  placeholder="e.g. Groceries, £60 a week, ask me over £25" autoComplete="off" />
           <button className="btn btn-primary" type="submit">Leash an agent</button>
         </form>
+
+        {canRun && (
+          <div className="hero-run">
+            <button type="button" className="btn" onClick={run} disabled={running}>
+              {running ? "Starting…" : "Run demo scenario"}
+            </button>
+            <span className="dim small">Larder bot shops three times: one paid, one tug, one blocked.</span>
+          </div>
+        )}
+        {runErr && <p className="notice small" role="alert">{runErr}</p>}
 
         <div className="examples">
           <span className="dim small">Try</span>

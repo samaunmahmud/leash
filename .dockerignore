@@ -1,0 +1,17 @@
+# Keep secrets, private notes and build output out of the image context.
+.git
+.env
+.env.*
+!.env.example
+sam_data.md
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+.local/
+docs/private/
+**/node_modules
+**/dist
+**/target
+**/*.log
+**/.DS_Store
+**/* 2.*

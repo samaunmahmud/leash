@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class LeashApplication {
     public static void main(String[] args) {
+        com.leash.config.DatabaseUrl.applyFrom(System.getenv()); // Render's postgres:// URL → JDBC
         SpringApplication.run(LeashApplication.class, args);
     }
 }

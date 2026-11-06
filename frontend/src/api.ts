@@ -13,6 +13,7 @@ import type {
   WalkReport,
 } from "./types";
 import { SAMPLE_LEDGER } from "./lib/sample";
+import { ownerPassphrase, setOwnerPassphrase } from "./lib/owner";
 
 // Every call to the backend lives here, so components never build URLs themselves.
 
@@ -21,26 +22,37 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message);
   }
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const owner = ownerPassphrase();
   const res = await fetch(path, {
     method,
-    headers: { Accept: "application/json", ...(body !== undefined ? { "Content-Type": "application/json" } : {}) },
+    headers: {
+      Accept: "application/json",
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...(owner ? { "X-Leash-Owner": owner } : {}),
+    },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
     let msg = `${path} answered ${res.status}`;
+    let code: string | undefined;
     try {
       const p = (await res.json()) as ProblemDetail;
       if (p.detail) msg = p.detail;
+      code = p.code;
     } catch {
       /* not JSON */
     }
-    throw new ApiError(msg, res.status);
+    if (res.status === 429 && !code) msg = "Too many requests. Wait a moment and try again.";
+    // A remembered passphrase that's now refused (changed on the server): forget it so the unlock button shows again.
+    if (code === "OWNER_REQUIRED" && owner) setOwnerPassphrase(null);
+    throw new ApiError(msg, res.status, code);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -66,6 +78,23 @@ export async function fetchDemoLedger(): Promise<{ data: DemoLedger; live: boole
   } catch {
     return { data: SAMPLE_LEDGER, live: false };
   }
+}
+
+/** Checks the owner passphrase and remembers it for this tab when it's right. */
+export async function unlockOwner(passphrase: string): Promise<void> {
+  const res = await fetch("/api/owner/check", { method: "POST", headers: { "X-Leash-Owner": passphrase } });
+  if (res.status === 204) {
+    setOwnerPassphrase(passphrase);
+    return;
+  }
+  let msg = res.status === 429 ? "Too many attempts. Wait a few minutes." : "That passphrase isn't right.";
+  try {
+    const p = (await res.json()) as ProblemDetail;
+    if (p.detail) msg = p.detail;
+  } catch {
+    /* not JSON */
+  }
+  throw new ApiError(msg, res.status);
 }
 
 // ── Leashes ──

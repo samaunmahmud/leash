@@ -35,11 +35,13 @@ public class LearningController {
     }
 
     /** One click: raises the slack to the suggested amount. 409 if the suggestion changed since it was shown. */
+    @com.leash.auth.DemoScoped(com.leash.auth.DemoScoped.Target.AGENT)
     @PostMapping("/api/leashes/{agentId}/suggestion/accept")
     public LearningService.LeashChange accept(@PathVariable String agentId, @Valid @RequestBody SlackChoice choice) {
         return learning.accept(agentId, choice.toMinor());
     }
 
+    @com.leash.auth.DemoScoped(com.leash.auth.DemoScoped.Target.AGENT)
     @PostMapping("/api/leashes/{agentId}/suggestion/dismiss")
     public ResponseEntity<Void> dismiss(@PathVariable String agentId, @Valid @RequestBody SlackChoice choice) {
         learning.dismiss(agentId, choice.toMinor());

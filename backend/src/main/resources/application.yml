@@ -10,6 +10,7 @@ spring:
   datasource:
     # Postgres when LEASH_DB_URL is set (e.g. jdbc:postgresql://localhost:5432/leash from docker-compose.yml).
     # Unset: in-memory H2 in PostgreSQL mode, so the app still starts with zero setup, but data is lost on restart.
+    # DATABASE_URL=postgres://… (Render) is converted to these three at startup when LEASH_DB_URL is unset.
     url: ${LEASH_DB_URL:jdbc:h2:mem:leash;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1}
     username: ${LEASH_DB_USER:sa}
     password: ${LEASH_DB_PASSWORD:}
@@ -41,6 +42,16 @@ leash:
     max-calls-per-day: ${LEASH_LLM_MAX_CALLS_PER_DAY:500}
     reasoning-effort: ${LEASH_LLM_REASONING_EFFORT:}
   cors-origins: ${LEASH_CORS_ORIGINS:http://localhost:5173}
-  public-url: ${LEASH_PUBLIC_URL:http://localhost:8080}
-  app-url: ${LEASH_APP_URL:http://localhost:5173}
+  # On Render both default to RENDER_EXTERNAL_URL (set by Render): the dashboard is served by the backend there.
+  public-url: ${LEASH_PUBLIC_URL:${RENDER_EXTERNAL_URL:http://localhost:8080}}
+  app-url: ${LEASH_APP_URL:${RENDER_EXTERNAL_URL:http://localhost:5173}}
   dev-endpoints: ${LEASH_DEV_ENDPOINTS:true}
+  demo:
+    # The hosted public demo: banner, hourly reset of the demo leashes, rate limits, owner gate (see DemoProperties).
+    public-mode: ${LEASH_DEMO_PUBLIC:false}
+    # Guards agent keys, saved PayPal and leash edits. Set it and those need it even outside public mode.
+    owner-passphrase: ${LEASH_OWNER_PASSPHRASE:}
+    reset-every: ${LEASH_DEMO_RESET_EVERY:PT1H}
+    seed-history: ${LEASH_DEMO_SEED_HISTORY:}
+    writes-per-minute: ${LEASH_DEMO_WRITES_PER_MINUTE:30}
+    demo-runs-per-hour: ${LEASH_DEMO_RUNS_PER_HOUR:30}

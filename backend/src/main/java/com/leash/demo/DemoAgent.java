@@ -55,6 +55,8 @@ public class DemoAgent {
     });
     private final AtomicBoolean running = new AtomicBoolean();
 
+    private DemoHistory history;
+
     public DemoAgent(PurchaseService purchases, LarderCatalogue larder, LedgerRepository ledger, MandateService leashes) {
         this.purchases = purchases;
         this.larder = larder;
@@ -62,11 +64,24 @@ public class DemoAgent {
         this.leashes = leashes;
     }
 
-    /** Clears the ledger and puts the three demo leashes back as they were (re-leashing any snapped agent). */
+    /**
+     * Clears the demo leashes' ledger and puts them back as they were (re-leashing any snapped agent). Leashes the
+     * owner made keep their history: the hosted demo resets every hour.
+     */
     @Transactional
     public void reset() {
-        ledger.deleteAll();
+        ledger.deleteForAgents(DemoLeashes.all().stream().map(DemoLeashes.Seed::agentId).toList());
         DemoLeashes.all().forEach(leashes::seed);
+        if (history != null) history.seedIfEnabled();
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setHistory(DemoHistory history) {
+        this.history = history;
+    }
+
+    public boolean running() {
+        return running.get();
     }
 
     /**

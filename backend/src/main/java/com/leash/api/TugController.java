@@ -32,11 +32,13 @@ public class TugController {
         return tugs.list(s.equals("ALL") ? null : s);
     }
 
+    @com.leash.auth.DemoScoped(com.leash.auth.DemoScoped.Target.TUG)
     @PostMapping("/{id}/approve")
     public TugView approve(@PathVariable String id) {
         return tugs.approve(id);
     }
 
+    @com.leash.auth.DemoScoped(com.leash.auth.DemoScoped.Target.TUG)
     @PostMapping("/{id}/deny")
     public TugView deny(@PathVariable String id) {
         return tugs.deny(id);

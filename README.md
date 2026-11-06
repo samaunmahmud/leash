@@ -80,6 +80,24 @@ cd frontend && npm test
 
 The backend tests run on H2 in PostgreSQL mode. With Docker running they also boot the app against a real Postgres (Testcontainers) and check that data survives a restart.
 
+## Deploy (Render)
+
+`render.yaml` is a Render Blueprint: one Docker web service (the `Dockerfile` builds the dashboard and serves it from
+Spring Boot) plus a Postgres database. In Render choose **New → Blueprint**, pick this repo, and fill in the secrets it
+asks for: `LEASH_OWNER_PASSPHRASE`, the PayPal sandbox client ID/secret and, optionally, an AI key and webhook ID.
+
+The hosted copy runs as a **public sandbox demo** (`LEASH_DEMO_PUBLIC=true`):
+
+- Anyone can play with the three demo leashes: run the scenario, answer tugs, snap back, press Regret, read the walk
+  report. The demo leashes reset every hour, and **Reset demo** puts them back at once.
+- **Owner mode** (the passphrase) is needed to issue agent keys, save or forget PayPal, and create or edit leashes.
+- Writes are rate-limited per visitor, demo runs per hour, and AI calls stay under `LEASH_LLM_MAX_CALLS_PER_DAY`.
+- The Larder bot gets three past-week tugs, labelled "seeded example", so mandate learning has history to work from.
+  They have no PayPal IDs because no payment was made.
+
+Locally none of this is on unless you set those variables. Set `LEASH_OWNER_PASSPHRASE` alone to guard owner actions
+without the rest of the public mode.
+
 ## Connect any agent (MCP)
 
 Leash is an MCP server (Streamable HTTP at `http://localhost:8080/mcp`), so any MCP-capable agent can be put on a leash. Each agent authenticates with its own key, and the key decides which leash it spends under: one agent can never spend under another's.

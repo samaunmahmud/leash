@@ -60,12 +60,14 @@ public class PurchaseController {
     }
 
     /** Captures an approved order by hand, if the PayPal redirect didn't come back (e.g. the tab was closed). */
+    @com.leash.auth.DemoScoped(com.leash.auth.DemoScoped.Target.ENTRY)
     @PostMapping("/api/ledger/{id}/capture")
     public LedgerEntry capture(@PathVariable String id) {
         return payments.capture(id);
     }
 
     /** "Regret": refunds a paid purchase in full via PayPal. 409 if it isn't paid (or PayPal refused the refund). */
+    @com.leash.auth.DemoScoped(com.leash.auth.DemoScoped.Target.ENTRY)
     @PostMapping("/api/ledger/{id}/refund")
     public LedgerEntry refund(@PathVariable String id) {
         return payments.refund(id);

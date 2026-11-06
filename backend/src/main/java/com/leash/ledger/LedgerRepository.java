@@ -175,6 +175,22 @@ public class LedgerRepository {
         jdbc.sql("DELETE FROM ledger_entries").update();
     }
 
+    /**
+     * Wipes these agents' ledger only (the demo reset): their entries, tugs, leash changes and dismissals, and the
+     * webhook log rows about their entries. Everyone else's history stays.
+     */
+    public void deleteForAgents(java.util.Collection<String> agentIds) {
+        if (agentIds.isEmpty()) return;
+        var ids = java.util.List.copyOf(agentIds);
+        jdbc.sql("DELETE FROM suggestion_dismissals WHERE agent_id IN (:ids)").param("ids", ids).update();
+        jdbc.sql("DELETE FROM leash_changes WHERE agent_id IN (:ids)").param("ids", ids).update();
+        jdbc.sql("DELETE FROM webhook_events WHERE entry_id IN (SELECT id FROM ledger_entries WHERE agent_id IN (:ids))")
+                .param("ids", ids).update();
+        jdbc.sql("DELETE FROM tugs WHERE entry_id IN (SELECT id FROM ledger_entries WHERE agent_id IN (:ids))")
+                .param("ids", ids).update();
+        jdbc.sql("DELETE FROM ledger_entries WHERE agent_id IN (:ids)").param("ids", ids).update();
+    }
+
     // ── Mapping ─────────────────────────────────────────────────────────────────────────────────────────────
 
     static LedgerEntry map(ResultSet rs, int row) throws SQLException {

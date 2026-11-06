@@ -5,6 +5,7 @@ import { SAMPLE_LEDGER } from "./lib/sample";
 import { useRoute } from "./hooks/useRoute";
 import { TopBar } from "./components/layout/TopBar";
 import { Footer } from "./components/layout/Footer";
+import { DemoBanner } from "./components/layout/DemoBanner";
 import { Tape, type TapeItem } from "./components/landing/Tape";
 import { Hero } from "./components/landing/Hero";
 import { LedgerPreview } from "./components/ledger/LedgerPreview";
@@ -44,8 +45,9 @@ export default function App() {
   if (route.page === "app") {
     return (
       <>
+        <DemoBanner health={health} />
         <TopBar health={health} inApp />
-        <Dashboard tab={route.tab} />
+        <Dashboard tab={route.tab} health={health} />
         <Footer />
       </>
     );
@@ -53,10 +55,11 @@ export default function App() {
 
   return (
     <>
+      <DemoBanner health={health} />
       <TopBar health={health} />
       <Tape items={tape} />
       <main>
-        <Hero />
+        <Hero canRun={health !== null} />
         <LedgerPreview data={ledger.data} live={ledger.live} />
         <HowItWorks />
         <UseCases />

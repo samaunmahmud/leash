@@ -19,6 +19,7 @@ import java.util.UUID;
  * Only registered when leash.dev-endpoints=true; production sets it to false.
  */
 @RestController
+@com.leash.auth.OwnerOnly
 @RequestMapping("/api/dev/paypal")
 @ConditionalOnBooleanProperty(name = "leash.dev-endpoints", matchIfMissing = true)
 public class DevPayPalController {

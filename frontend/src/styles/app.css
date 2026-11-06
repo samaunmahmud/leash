@@ -242,3 +242,14 @@ body.has-drawer { overflow: hidden; }
   .walk-body { padding: 16px; }
   .walk-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ── Public demo (T17) ───────────────────────────────── */
+.demo-banner { background: var(--accent-soft); border-bottom: 1px solid var(--accent-line); color: var(--text-2); font-size: 13px; }
+.demo-banner .container { padding-top: 8px; padding-bottom: 8px; text-align: center; }
+.demo-banner b { color: var(--accent); font-weight: 650; }
+.owner-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.owner-form input { height: 40px; min-width: 0; flex: 1 1 160px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--panel); color: var(--text); font: inherit; font-size: 13.5px; }
+.owner-form input:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.owner-err { flex-basis: 100%; margin: 0; color: var(--neg); }
+.owner-state { align-self: center; padding: 0 6px; }
+.hero-run { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; }

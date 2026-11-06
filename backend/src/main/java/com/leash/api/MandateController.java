@@ -21,6 +21,7 @@ public class MandateController {
         this.parser = parser;
     }
 
+    @com.leash.auth.OwnerOnly
     @PostMapping("/parse")
     public ParsedMandate parse(@Valid @RequestBody ParseRequest body) {
         return parser.parse(body.text());

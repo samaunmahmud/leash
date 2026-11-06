@@ -24,17 +24,20 @@ public class WalletController {
     }
 
     /** Returns the approve link to open once in the PayPal sandbox. */
+    @com.leash.auth.OwnerOnly
     @PostMapping("/setup")
     public WalletService.View setup() {
         return wallet.start();
     }
 
     /** "I've approved it": finishes setup if PayPal's redirect didn't reach Leash. */
+    @com.leash.auth.OwnerOnly
     @PostMapping("/complete")
     public WalletService.View complete() {
         return wallet.complete();
     }
 
+    @com.leash.auth.OwnerOnly
     @DeleteMapping
     public WalletService.View forget() {
         return wallet.forget();

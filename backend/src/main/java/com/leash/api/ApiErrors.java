@@ -23,6 +23,20 @@ public class ApiErrors {
         return problem(HttpStatus.FORBIDDEN, "Forbidden", e.getMessage());
     }
 
+    @ExceptionHandler(OwnerController.OwnerRequiredException.class)
+    ProblemDetail ownerRequired(OwnerController.OwnerRequiredException e) {
+        ProblemDetail p = problem(HttpStatus.UNAUTHORIZED, "Owner passphrase needed", e.getMessage());
+        p.setProperty("code", "OWNER_REQUIRED");
+        return p;
+    }
+
+    @ExceptionHandler(OwnerController.RateLimitedException.class)
+    ProblemDetail rateLimited(OwnerController.RateLimitedException e) {
+        ProblemDetail p = problem(HttpStatus.TOO_MANY_REQUESTS, "Too many requests", e.getMessage());
+        p.setProperty("code", "RATE_LIMITED");
+        return p;
+    }
+
     @ExceptionHandler(NotConfiguredException.class)
     ProblemDetail notConfigured(NotConfiguredException e) {
         return problem(HttpStatus.SERVICE_UNAVAILABLE, "Not configured", e.getMessage());

@@ -38,9 +38,9 @@ public class LeashController {
 
     /**
      * Issues (or rotates) this agent's key and returns it once, with the MCP URL. The old key stops working at once.
-     * The dashboard has no login yet (real accounts are on the cut list), so this is fine for a local or sandbox demo
-     * but must sit behind owner auth before Leash is exposed publicly.
+     * Owner only: with {@code LEASH_OWNER_PASSPHRASE} set (or in public demo mode) it needs the passphrase.
      */
+    @com.leash.auth.OwnerOnly
     @PostMapping("/{agentId}/key")
     @ResponseStatus(HttpStatus.CREATED)
     public AgentKey issueKey(@PathVariable String agentId) {
@@ -70,24 +70,28 @@ public class LeashController {
         return LeashCard.of(leashes.get(agentId), ledger, keys);
     }
 
+    @com.leash.auth.OwnerOnly
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Leash create(@Valid @RequestBody NewLeash body) {
         return leashes.create(body.agentName(), body.kind(), body.mandate());
     }
 
+    @com.leash.auth.OwnerOnly
     @PutMapping("/{agentId}/mandate")
     public Leash updateMandate(@PathVariable String agentId, @Valid @RequestBody MandateInput body) {
         return leashes.updateMandate(agentId, body);
     }
 
     /** Snap back: revoke the agent instantly. */
+    @com.leash.auth.DemoScoped(com.leash.auth.DemoScoped.Target.AGENT)
     @PostMapping("/{agentId}/snap")
     public Leash snap(@PathVariable String agentId) {
         return leashes.snap(agentId);
     }
 
     /** Undo a snap back. */
+    @com.leash.auth.DemoScoped(com.leash.auth.DemoScoped.Target.AGENT)
     @PostMapping("/{agentId}/releash")
     public Leash releash(@PathVariable String agentId) {
         return leashes.releash(agentId);

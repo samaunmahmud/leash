@@ -9,9 +9,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final LeashProperties props;
+    private final com.leash.auth.OwnerGate gate;
 
-    public WebConfig(LeashProperties props) {
+    public WebConfig(LeashProperties props, com.leash.auth.OwnerGate gate) {
         this.props = props;
+        this.gate = gate;
+    }
+
+    @Override
+    public void addInterceptors(org.springframework.web.servlet.config.annotation.InterceptorRegistry registry) {
+        registry.addInterceptor(gate);
     }
 
     /** Spring only serves index.html at the root by itself; the Larder shop lives in a folder. */

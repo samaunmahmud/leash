@@ -10,11 +10,13 @@ const LedgerGrid = lazy(() => import("./LedgerGrid").then((m) => ({ default: m.L
 import { NewLeash } from "./NewLeash";
 import { WalletCard } from "./WalletCard";
 import { ChangeList, WalkReports } from "./WalkReports";
+import { OwnerUnlock } from "./OwnerUnlock";
+import type { Health } from "../../types";
 
 const TAB_LABEL: Record<Tab, string> = { leashes: "Leashes", tugs: "Tugs", ledger: "Ledger", report: "Walk report", new: "New leash" };
 
 /** The signed-in view: leashes, tugs waiting for you, the ledger, and the mandate composer. Live over SSE. */
-export function Dashboard({ tab }: { tab: Tab }) {
+export function Dashboard({ tab, health }: { tab: Tab; health: Health | null }) {
   const data = useLeashData();
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoMsg, setDemoMsg] = useState<string | null>(null);
@@ -41,7 +43,10 @@ export function Dashboard({ tab }: { tab: Tab }) {
           </p>
         </div>
         <div className="app-actions">
-          <button type="button" className="btn" disabled={demoBusy} onClick={demo(resetDemo, "Demo reset.")}>Reset</button>
+          <OwnerUnlock health={health} />
+          <button type="button" className="btn" disabled={demoBusy} onClick={demo(resetDemo, "Demo reset.")}>
+            {health?.publicDemo ? "Reset demo" : "Reset"}
+          </button>
           <button type="button" className="btn btn-primary" disabled={demoBusy}
                   onClick={demo(runDemo, "Larder bot is shopping. Watch the ledger.")}>Run demo</button>
         </div>

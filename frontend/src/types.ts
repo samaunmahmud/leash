@@ -90,6 +90,13 @@ export interface Health {
   sandbox: boolean;
   aiConfigured: boolean;
   vaultConnected?: boolean;
+  /** The hosted public demo: show the banner. */
+  publicDemo?: boolean;
+  /** Owner actions need the passphrase. */
+  ownerGated?: boolean;
+  /** A passphrase is set; false in the public demo means owner actions are off. */
+  ownerEnabled?: boolean;
+  resetMinutes?: number;
 }
 
 export interface Agent {
@@ -168,6 +175,8 @@ export interface ProblemDetail {
   title?: string;
   detail?: string;
   status?: number;
+  /** OWNER_REQUIRED, OWNER_DISABLED or RATE_LIMITED from the owner gate. */
+  code?: string;
 }
 
 /** The owner's saved PayPal (T11). Only a masked hint ever reaches the browser. */
