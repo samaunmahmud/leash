@@ -82,9 +82,14 @@ The backend tests run on H2 in PostgreSQL mode. With Docker running they also bo
 
 ## Deploy (Render)
 
+**Live demo: https://leash-6sb3.onrender.com** (PayPal sandbox, resets hourly). On Render's free plan the first
+visit after a quiet spell can take a minute or two while the service starts up.
+
 `render.yaml` is a Render Blueprint: one Docker web service (the `Dockerfile` builds the dashboard and serves it from
 Spring Boot) plus a Postgres database. In Render choose **New → Blueprint**, pick this repo, and fill in the secrets it
 asks for: `LEASH_OWNER_PASSPHRASE`, the PayPal sandbox client ID/secret and, optionally, an AI key and webhook ID.
+For webhooks, register `https://<your service>.onrender.com/api/paypal/webhook` in the sandbox app with the four events
+listed under "Run it locally", then set `LEASH_PAYPAL_WEBHOOK_ID` and redeploy.
 
 The hosted copy runs as a **public sandbox demo** (`LEASH_DEMO_PUBLIC=true`):
 
