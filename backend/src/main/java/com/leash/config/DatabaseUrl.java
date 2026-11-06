@@ -76,9 +76,17 @@ public final class DatabaseUrl {
         props.setProperty("connectTimeout", "5");
         props.setProperty("loginTimeout", "5");
         props.setProperty("socketTimeout", "5");
-        try (var c = java.sql.DriverManager.getConnection(j.url(), props)) {
-            return c.isValid(3);
-        } catch (java.sql.SQLException | RuntimeException e) {
+        // The driver directly, not DriverManager: this runs in main() before Spring, and inside the packaged jar
+        // DriverManager may not see drivers loaded by the jar's class loader yet (seen on Render: it always fell back).
+        try {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            var driver = (java.sql.Driver) Class.forName("org.postgresql.Driver", true, cl).getDeclaredConstructor().newInstance();
+            try (var c = driver.connect(j.url(), props)) {
+                return c != null && c.isValid(3);
+            }
+        } catch (ReflectiveOperationException | java.sql.SQLException | RuntimeException e) {
+            System.err.println("WARN Leash: database check failed: " + e.getClass().getSimpleName() + ": " + String.valueOf(e.getMessage()).replaceAll("//[^/@ ]*@", "//***@")
+                    + (e.getCause() != null ? " (" + e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage() + ")" : ""));
             return false;
         }
     }
