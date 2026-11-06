@@ -170,10 +170,17 @@ class PublicDemoTest {
     }
 
     @Test
+    void theOwnerIsNeverLockedOutByUsingTheRightPassphrase() {
+        for (int i = 0; i < 25; i++) assertThat(http.post("/api/owner/check", "", owner()).status()).isEqualTo(204);
+        assertThat(http.post("/api/leashes/agent-larder/key", "", owner()).status()).isEqualTo(201);
+    }
+
+    @Test
     void passphraseGuessesAreLimited() {
         int last = 0;
         for (int i = 0; i < 12; i++) last = http.post("/api/owner/check", "", Map.of(OwnerGate.HEADER, "guess" + i)).status();
         assertThat(last).isEqualTo(429);
+        assertThat(http.post("/api/owner/check", "", owner()).status()).isEqualTo(429); // locked: nothing is compared
         limits.clear();
         assertThat(http.post("/api/owner/check", "", owner()).status()).isEqualTo(204);
     }

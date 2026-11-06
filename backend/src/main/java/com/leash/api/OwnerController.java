@@ -22,8 +22,11 @@ public class OwnerController {
     public ResponseEntity<Void> check(@RequestHeader(value = OwnerGate.HEADER, required = false) String passphrase,
                                       HttpServletRequest req) {
         if (!gate.passphraseSet()) throw new ForbiddenException("No owner passphrase is set on this server.");
-        if (!gate.guessAllowed(req)) throw new RateLimitedException("Too many passphrase attempts. Wait a few minutes.");
-        if (!gate.matches(passphrase)) throw new OwnerRequiredException("That passphrase isn't right.");
+        switch (gate.check(req, passphrase)) {
+            case LOCKED -> throw new RateLimitedException("Too many passphrase attempts. Wait a few minutes.");
+            case WRONG -> throw new OwnerRequiredException("That passphrase isn't right.");
+            case RIGHT -> { }
+        }
         return ResponseEntity.noContent().build();
     }
 

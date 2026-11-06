@@ -32,6 +32,12 @@ public class RateLimiter {
         return w.count() <= limit;
     }
 
+    /** Hits so far in {@code key}'s current window, without counting one. */
+    public int count(String key, Duration window) {
+        Window w = windows.get(key);
+        return w == null || clock.millis() - w.start() >= window.toMillis() ? 0 : w.count();
+    }
+
     /** Seconds until {@code key}'s window ends (for Retry-After). */
     public long retryAfterSeconds(String key, Duration window) {
         Window w = windows.get(key);

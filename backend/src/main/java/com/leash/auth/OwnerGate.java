@@ -118,11 +118,12 @@ public class OwnerGate implements HandlerInterceptor {
         }
         String sent = req.getHeader(HEADER);
         if (sent != null && !sent.isBlank()) {
-            if (!guessAllowed(req)) {
-                return tooMany(res, limits.retryAfterSeconds("g:" + visitor(req), GUESS_WINDOW),
+            switch (check(req, sent)) {
+                case RIGHT: return true;
+                case LOCKED: return tooMany(res, limits.retryAfterSeconds("g:" + visitor(req), GUESS_WINDOW),
                         "Too many passphrase attempts. Wait a few minutes.");
+                default: break;
             }
-            if (matches(sent)) return true;
         }
         return problem(res, 401, "OWNER_REQUIRED", "Owner passphrase needed",
                 sent == null || sent.isBlank()
@@ -130,13 +131,22 @@ public class OwnerGate implements HandlerInterceptor {
                         : "That passphrase isn't right.");
     }
 
+    public enum Check { RIGHT, WRONG, LOCKED }
+
     /**
-     * Counts one passphrase guess; false when this visitor or everyone together guessed too often. Counted before
-     * comparing, so even a right guess can't be brute-forced past the limit.
+     * Checks a passphrase. Only wrong guesses are counted, so the owner can use it as often as they like; once this
+     * visitor (or everyone together) has guessed wrong too often, nothing is compared at all until the window ends,
+     * so even a right guess can't be found by brute force.
      */
-    public boolean guessAllowed(HttpServletRequest req) {
-        return limits.allow("g:" + visitor(req), GUESSES_PER_VISITOR, GUESS_WINDOW)
-                && limits.allow("g:all", GUESSES_PER_HOUR, HOUR);
+    public Check check(HttpServletRequest req, String candidate) {
+        String visitor = "g:" + visitor(req);
+        if (limits.count(visitor, GUESS_WINDOW) >= GUESSES_PER_VISITOR || limits.count("g:all", HOUR) >= GUESSES_PER_HOUR) {
+            return Check.LOCKED;
+        }
+        if (matches(candidate)) return Check.RIGHT;
+        limits.allow(visitor, Integer.MAX_VALUE, GUESS_WINDOW);
+        limits.allow("g:all", Integer.MAX_VALUE, HOUR);
+        return Check.WRONG;
     }
 
     public boolean passphraseSet() {
