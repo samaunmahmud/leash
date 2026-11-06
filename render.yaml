@@ -14,6 +14,9 @@ services:
         fromDatabase:
           name: leash-db
           property: connectionString
+      # If the database stops answering (Render's free Postgres expires after 30 days), start on the in-memory one.
+      - key: LEASH_DB_FALLBACK
+        value: memory
       # The public demo: banner, hourly reset, rate limits, owner gate.
       - key: LEASH_DEMO_PUBLIC
         value: "true"

@@ -44,13 +44,43 @@ public final class DatabaseUrl {
      * in the environment. System properties outrank env vars in Spring, but these are only set when the env has none.
      */
     public static void applyFrom(Map<String, String> env) {
+        applyFrom(env, DatabaseUrl::reachable);
+    }
+
+    /**
+     * With {@code LEASH_DB_FALLBACK=memory} a database that doesn't answer is skipped and the in-memory one is used
+     * instead. That keeps the hosted public demo up after Render's free Postgres expires (it resets hourly anyway).
+     */
+    static void applyFrom(Map<String, String> env, java.util.function.Predicate<Jdbc> reachable) {
         String explicit = env.get("LEASH_DB_URL");
         if (explicit != null && !explicit.isBlank()) return;
-        parse(env.get("DATABASE_URL")).ifPresent(j -> {
+        Optional<Jdbc> parsed = parse(env.get("DATABASE_URL"));
+        if (parsed.isPresent() && "memory".equalsIgnoreCase(String.valueOf(env.get("LEASH_DB_FALLBACK")).strip())
+                && !reachable.test(parsed.get())) {
+            // Logging isn't set up yet this early; AppConfig's in-memory warning follows once it is.
+            System.err.println("WARN Leash: DATABASE_URL doesn't answer; LEASH_DB_FALLBACK=memory, so using the in-memory database.");
+            return;
+        }
+        parsed.ifPresent(j -> {
             System.setProperty("LEASH_DB_URL", j.url());
             if (j.user() != null) System.setProperty("LEASH_DB_USER", j.user());
             System.setProperty("LEASH_DB_PASSWORD", j.password() == null ? "" : j.password());
         });
+    }
+
+    /** One quick connection attempt, at most about 5 seconds. */
+    static boolean reachable(Jdbc j) {
+        var props = new java.util.Properties();
+        if (j.user() != null) props.setProperty("user", j.user());
+        if (j.password() != null) props.setProperty("password", j.password());
+        props.setProperty("connectTimeout", "5");
+        props.setProperty("loginTimeout", "5");
+        props.setProperty("socketTimeout", "5");
+        try (var c = java.sql.DriverManager.getConnection(j.url(), props)) {
+            return c.isValid(3);
+        } catch (java.sql.SQLException | RuntimeException e) {
+            return false;
+        }
     }
 
     private static String decode(String s) {

@@ -21,6 +21,36 @@ class DatabaseUrlTest {
         assertThat(j.password()).isEqualTo("pw");
     }
 
+    @org.junit.jupiter.api.AfterEach
+    void clear() {
+        System.clearProperty("LEASH_DB_URL");
+        System.clearProperty("LEASH_DB_USER");
+        System.clearProperty("LEASH_DB_PASSWORD");
+    }
+
+    @Test
+    void usesTheDatabaseWhenItAnswers() {
+        DatabaseUrl.applyFrom(java.util.Map.of("DATABASE_URL", "postgres://u:p@db/leash", "LEASH_DB_FALLBACK", "memory"), j -> true);
+        assertThat(System.getProperty("LEASH_DB_URL")).isEqualTo("jdbc:postgresql://db/leash");
+    }
+
+    @Test
+    void fallsBackToMemoryWhenTheDatabaseIsGone() {
+        DatabaseUrl.applyFrom(java.util.Map.of("DATABASE_URL", "postgres://u:p@db/leash", "LEASH_DB_FALLBACK", "memory"), j -> false);
+        assertThat(System.getProperty("LEASH_DB_URL")).isNull();
+    }
+
+    @Test
+    void withoutTheFallbackADeadDatabaseStillFailsLoudly() {
+        DatabaseUrl.applyFrom(java.util.Map.of("DATABASE_URL", "postgres://u:p@db/leash"), j -> false);
+        assertThat(System.getProperty("LEASH_DB_URL")).isEqualTo("jdbc:postgresql://db/leash");
+    }
+
+    @Test
+    void aClosedPortIsNotReachable() {
+        assertThat(DatabaseUrl.reachable(new DatabaseUrl.Jdbc("jdbc:postgresql://127.0.0.1:1/leash", "u", "p"))).isFalse();
+    }
+
     @Test
     void ignoresAnythingElse() {
         assertThat(DatabaseUrl.parse(null)).isEmpty();

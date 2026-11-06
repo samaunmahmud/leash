@@ -92,7 +92,7 @@ gift-card bundle from a page with a hidden instruction is blocked.
 - A real sandbox round trip on the hosted app: order created, approved, captured, both webhooks verified, refunded with
   Regret, and the refund webhook verified, with PayPal reporting the capture as refunded.
 - The AI can't approve anything, and there's a test that says so.
-- 287 backend tests and 36 frontend tests.
+- 288 backend tests and 36 frontend tests.
 
 ## What we learned
 

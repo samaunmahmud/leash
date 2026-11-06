@@ -195,7 +195,7 @@ refuses it.) The REST endpoint `POST /api/purchases` takes the same `Authorizati
 
 ## Run it locally
 
-Requirements: Java 21, Maven 3.9+, Node 20+. Docker is optional (for Postgres).
+Requirements: Java 21, Maven 3.9+, Node 22.12+ (Vite and Vitest need it). Docker is optional (for Postgres).
 
 ```bash
 git clone https://github.com/samaunmahmud/leash.git && cd leash
@@ -226,7 +226,7 @@ Open http://localhost:5173 (the API is on http://localhost:8080, health at `/api
 ## Tests
 
 ```bash
-cd backend && mvn test     # 287 tests: policy engine, risk checks, PayPal flows against a fake PayPal, MCP, webhooks
+cd backend && mvn test     # 288 tests: policy engine, risk checks, PayPal flows against a fake PayPal, MCP, webhooks
 cd frontend && npm test    # 36 tests
 ```
 
@@ -249,6 +249,9 @@ The hosted copy runs as a **public sandbox demo** (`LEASH_DEMO_PUBLIC=true`):
 - Writes are rate-limited per visitor, demo runs per hour, and AI calls stay under `LEASH_LLM_MAX_CALLS_PER_DAY`.
 - Larder bot gets three past-week tugs, labelled *seeded example*, so mandate learning has history to work from. They
   have no PayPal IDs because no payment was made.
+
+Render's free Postgres expires after 30 days. With `LEASH_DB_FALLBACK=memory` (set in `render.yaml`), Leash checks the
+database at startup and, if it doesn't answer, starts on the in-memory database instead, so the demo stays up.
 
 Locally none of this is on unless you set those variables. Set `LEASH_OWNER_PASSPHRASE` on its own to guard owner
 actions without the rest of the public mode.
