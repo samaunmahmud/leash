@@ -34,8 +34,9 @@ describe("ledgerTotals", () => {
       e("TUG", [], { status: "TUG_PENDING" }),
       e("TUG", [], { status: "DENIED" }),
       e("BLOCK", ["PROMPT_INJECTION"], { status: "BLOCKED" }),
+      e("TUG", [], { status: "PAYPAL_OFF" }), // approved, but no PayPal payment: not "paid"
     ]);
-    expect(t).toEqual({ paid: 1000, waiting: 2000, blocked: 1000, currency: "GBP", count: 5 });
+    expect(t).toEqual({ paid: 1000, waiting: 2000, blocked: 1000, currency: "GBP", count: 6 });
   });
 });
 

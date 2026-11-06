@@ -22,7 +22,8 @@ export function riskLevel(e: LedgerEntry): { level: RiskLevel; byAi: boolean } {
   return { level: "NONE", byAi: false };
 }
 
-const PAID: EntryStatus[] = ["PAID", "PAYPAL_OFF"];
+// Only money PayPal actually captured. PAYPAL_OFF (approved, no order made; also the seeded demo history) isn't paid.
+const PAID: EntryStatus[] = ["PAID"];
 const WAITING: EntryStatus[] = ["TUG_PENDING", "AWAITING_PAYER", "PROCESSING"];
 
 /** The pinned total row: money paid, money waiting on the human or PayPal, money Leash refused. Minor units. */
