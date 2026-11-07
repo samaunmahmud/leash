@@ -8,6 +8,7 @@ Spending limits for AI agents, enforced through PayPal.
 
 <p align="center">
   <a href="https://leash-6sb3.onrender.com"><img src="https://img.shields.io/badge/live_demo-leash--6sb3.onrender.com-8a1538?style=flat-square" alt="Live demo" /></a>
+  <a href="https://youtu.be/KFSo6Px9NtY"><img src="https://img.shields.io/badge/demo_video-YouTube-ff0000?style=flat-square&logo=youtube&logoColor=white" alt="Demo video on YouTube" /></a>
   <img src="https://img.shields.io/badge/PayPal-Sandbox-0070e0?style=flat-square" alt="PayPal Sandbox" />
   <img src="https://img.shields.io/badge/Java_21-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 21" />
   <img src="https://img.shields.io/badge/Spring_Boot_4-6DB33F?style=flat-square&logo=springboot&logoColor=white" alt="Spring Boot 4" />
@@ -22,6 +23,7 @@ Spending limits for AI agents, enforced through PayPal.
 > [!NOTE]
 > **Live demo: https://leash-6sb3.onrender.com.** The first load may take up to a minute while the free server wakes up.
 > It's a shared PayPal **sandbox** demo that resets every hour. No real money moves.
+> **Demo video (2:17): https://youtu.be/KFSo6Px9NtY**
 
 ---
 

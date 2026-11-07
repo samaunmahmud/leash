@@ -16,7 +16,7 @@ Let your agents shop. Keep them on a leash.
 
 - Live demo: https://leash-6sb3.onrender.com (PayPal sandbox; the first load can take up to a minute)
 - Code: https://github.com/samaunmahmud/leash
-- Video: *(YouTube link)*
+- Video: https://youtu.be/KFSo6Px9NtY
 
 ---
 
@@ -57,8 +57,10 @@ gift-card bundle from a page with a hidden instruction is blocked.
 - **Backend:** Java 21 and Spring Boot 4. The policy engine is plain Java with no framework code and its own tests.
   Postgres with Flyway migrations, plain JDBC.
 - **PayPal (sandbox):** OAuth client credentials; Orders v2 to create and capture orders, with idempotency keys;
-  Vault v3 setup tokens and payment tokens so a saved PayPal can pay approved purchases with no popup; webhooks
-  verified with PayPal's verify-signature API and applied once per event ID; and full refunds on captures for Regret.
+  Vault v3 setup tokens and payment tokens, so a saved PayPal can pay approved purchases with no popup (saving and
+  forgetting a PayPal are verified in sandbox; the no-popup charge itself is built and tested against a fake PayPal
+  but not yet seen live); webhooks verified with PayPal's verify-signature API and applied once per event ID; and
+  full refunds on captures for Regret.
 - **AI:** Gemini (`gemini-3.5-flash-lite`) through Google's OpenAI-compatible API, with JSON output, for three jobs:
   parsing mandates, the risk check, and wording the walk report. Every answer is validated, there's a daily call
   budget, a timeout and a circuit breaker, and each job has a rule-based fallback.
@@ -80,6 +82,8 @@ gift-card bundle from a page with a hidden instruction is blocked.
   didn't compute (or a spelled-out number, or another currency) is thrown away in favour of a template.
 - **Webhooks racing the rest of the app.** A webhook can arrive before, during or after the return redirect or a
   Regret click. Each entry only moves forward from the state the event expects, so nothing gets paid or refunded twice.
+  (Live, the webhooks arrived after the redirect had already captured. The case where the webhook does the capture
+  because the payer closed the tab is covered by tests, not yet seen live.)
 - **Refund permissions.** My first live refund failed with 403. The payee was a Personal sandbox account, and PayPal
   only lets the receiving merchant refund. Leash now warns about that at startup.
 - **Free-tier limits.** The Gemini free tier allows about 20 calls a day per model and sometimes stalls. The landing
